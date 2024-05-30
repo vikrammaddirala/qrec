@@ -6,7 +6,8 @@ steps:
     args:
       - '-c'
       - |
-        curl -X GET -H "Authorization: Bearer $(gcloud auth print-access-token)" \
+        ACCESS_TOKEN=$(gcloud auth print-access-token)
+        curl -X GET -H "Authorization: Bearer $ACCESS_TOKEN" \
         -o exported_proxy.zip \
         "https://apigee.googleapis.com/v1/organizations/qrec-qa-apigee-nonprod/environments/dev/apis/helloworld/revisions/1?format=bundle"
 
@@ -17,7 +18,8 @@ steps:
     args:
       - '-c'
       - |
-        curl -X POST -H "Authorization: Bearer $(gcloud auth print-access-token)" \
+        ACCESS_TOKEN=$(gcloud auth print-access-token)
+        curl -X POST -H "Authorization: Bearer $ACCESS_TOKEN" \
         -F file=@exported_proxy.zip \
         "https://apigee.googleapis.com/v1/organizations/qrec-qa-apigee-nonprod/apis?action=import&name=helloworld"
 
@@ -28,7 +30,8 @@ steps:
     args:
       - '-c'
       - |
-        curl -X POST -H "Authorization: Bearer $(gcloud auth print-access-token)" \
+        ACCESS_TOKEN=$(gcloud auth print-access-token)
+        curl -X POST -H "Authorization: Bearer $ACCESS_TOKEN" \
         -H "Content-Type: application/json" \
         -d '{"name":"helloworld", "revision":"1", "environment":"dev-int"}' \
         "https://apigee.googleapis.com/v1/organizations/qrec-qa-apigee-nonprod/environments/dev-int/apis/helloworld/revisions/1/deployments"
