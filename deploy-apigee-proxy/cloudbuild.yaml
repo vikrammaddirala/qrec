@@ -1,25 +1,29 @@
 steps:
   # Step 1: Export the proxy from the dev environment
-  - name: 'gcr.io/cloud-builders/curl'
+  - name: 'gcr.io/cloud-builders/docker'
     id: 'Export Proxy'
     entrypoint: 'bash'
     args:
       - '-c'
       - |
-        curl -X GET -H "Authorization: Bearer $(gcloud auth print-access-token)" \
+        docker run --rm -v $(pwd):/workspace -w /workspace google/cloud-sdk \
+        bash -c "gcloud auth print-access-token > access_token.txt && \
+        curl -X GET -H 'Authorization: Bearer $(cat access_token.txt)' \
         -o exported_proxy.zip \
-        "https://apigee.googleapis.com/v1/organizations/qrec-qa-apigee-nonprod/environments/dev/apis/helloworld/revisions/1?format=bundle"
+        'https://apigee.googleapis.com/v1/organizations/qrec-qa-apigee-nonprod/environments/dev/apis/helloworld/revisions/1?format=bundle'"
 
   # Step 2: Import the proxy to the dev-int environment
-  - name: 'gcr.io/cloud-builders/curl'
+  - name: 'gcr.io/cloud-builders/docker'
     id: 'Import Proxy'
     entrypoint: 'bash'
     args:
       - '-c'
       - |
-        curl -X POST -H "Authorization: Bearer $(gcloud auth print-access-token)" \
+        docker run --rm -v $(pwd):/workspace -w /workspace google/cloud-sdk \
+        bash -c "gcloud auth print-access-token > access_token.txt && \
+        curl -X POST -H 'Authorization: Bearer $(cat access_token.txt)' \
         -F file=@exported_proxy.zip \
-        "https://apigee.googleapis.com/v1/organizations/qrec-qa-apigee-nonprod/apis?action=import&name=helloworld"
+        'https://apigee.googleapis.com/v1/organizations/qrec-qa-apigee-nonprod/apis?action=import&name=helloworld'"
 
 timeout: '3600s'
 
