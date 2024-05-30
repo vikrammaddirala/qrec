@@ -1,44 +1,38 @@
-# Copyright 2023 Google LLC
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#      http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-
 steps:
-  - name: 'gcr.io/cloud-builders/gcloud'
-    id: variables
-    entrypoint: 'bash'
+  # Step 1: Export the proxy from the dev environment
+  - name: 'gcr.io/cloud-builders/curl'
+    id: 'Export Proxy'
     args:
-      - -c
-      - |
-        export build_token=\"$(gcloud auth application-default \
-          print-access-token)\"
+      - '-X'
+      - 'GET'
+      - '-H'
+      - 'Authorization: Bearer $(gcloud auth print-access-token)'
+      - '-o'
+      - 'exported_proxy.zip'
+      - 'https://apigee.googleapis.com/v1/organizations/qrec-qa-apigee-nonprod/environments/dev/apis/helloworld/revisions/1?format=bundle'
 
-        # write all "build_" variables to the persistent volume "/workspace"
-        env | grep "^build_" > /workspace/build_vars
-  - name: 'gcr.io/cloud-builders/mvn'
-    id: "Package bundle"
-    entrypoint: 'bash'
+  # Step 2: Import the proxy to the dev-int environment
+  - name: 'gcr.io/cloud-builders/curl'
+    id: 'Import Proxy'
     args:
-      - -c
-      - |
-        mvn -f deploy-apigee-proxy/pom.xml -ntp process-resources apigee-enterprise:configure \
-          -Pdev -Dorg=$PROJECT_ID -Denv=$_APIGEE_TEST_ENV
-  - name: 'gcr.io/cloud-builders/mvn'
-    id: "Deploy bundle"
-    entrypoint: 'bash'
+      - '-X'
+      - 'POST'
+      - '-H'
+      - 'Authorization: Bearer $(gcloud auth print-access-token)'
+      - '-F'
+      - 'file=@exported_proxy.zip'
+      - 'https://apigee.googleapis.com/v1/organizations/qrec-qa-apigee-nonprod/apis?action=import&name=helloworld'
+
+  # Step 3: Deploy the proxy to the dev-int environment
+  - name: 'gcr.io/cloud-builders/curl'
+    id: 'Deploy Proxy'
     args:
-      - -c
-      - |
-        # Read environment variables from disk
-        source /workspace/build_vars &&
-        mvn -f deploy-apigee-proxy/pom.xml -ntp apigee-enterprise:deploy -Pdev -Dorg=$PROJECT_ID \
-          -Denv=$_APIGEE_TEST_ENV -Dbearer=${build_token}
+      - '-X'
+      - 'POST'
+      - '-H'
+      - 'Authorization: Bearer $(gcloud auth print-access-token)'
+      - '-H'
+      - 'Content-Type: application/json'
+      - '-d'
+      - '{"name":"helloworld", "revision":"1", "environment":"dev-int"}'
+      - 'https://apigee.googleapis.com/v1/organizations/qrec-qa-apigee-nonprod/environments/dev-int/apis/helloworld/revisions/1/deployments'
