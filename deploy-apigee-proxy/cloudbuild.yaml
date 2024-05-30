@@ -33,7 +33,7 @@ steps:
         -d '{"name":"helloworld", "revision":"1", "environment":"dev-int"}' \
         "https://apigee.googleapis.com/v1/organizations/qrec-qa-apigee-nonprod/environments/dev-int/apis/helloworld/revisions/1/deployments"
 
-timeout: '3600s
+timeout: '3600s'
 
 options:
   logging: CLOUD_LOGGING_ONLY
