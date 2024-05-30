@@ -4,12 +4,6 @@ steps:
     args:
       - '-c'
       - |
-        # Set source and destination project IDs and environments
-        SOURCE_PROJECT="qrec-qa-apigee-nonprod"
-        DEST_PROJECT="qrec-qa-apigee-prod"
-        SOURCE_ENV="uat"
-        DEST_ENV="prod"
-        
         # Loop through each proxy and export, then import to the destination project and environment
         gcloud apigee apis list --project=qrec-qa-apigee-nonprod --environment=uat --format="value(name)" |
         while read -r PROXY; do
