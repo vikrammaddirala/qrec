@@ -10,9 +10,6 @@ steps:
         SOURCE_ENV="uat"
         DEST_ENV="prod"
         
-        # Authenticate with gcloud
-        # gcloud auth activate-service-account --key-file=$GOOGLE_APPLICATION_CREDENTIALS
-
         # List all proxies in the source environment
         PROXIES=$(gcloud apigee apis list --project=$SOURCE_PROJECT --environment=$SOURCE_ENV --format="value(name)")
 
