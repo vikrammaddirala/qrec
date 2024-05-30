@@ -10,10 +10,10 @@ steps:
           echo "Processing proxy: $PROXY"
           
           # Export the proxy
-          gcloud apigee apis export --project=qrec-qa-apigee-nonprod --environment=uat --api=$PROXY --output="${PROXY}.zip"
+          gcloud apigee apis export --project=qrec-qa-apigee-nonprod --environment=uat --api="$PROXY" --output="${PROXY}.zip"
           
           # Import the proxy to the destination project
-          gcloud apigee apis import --project=qrec-qa-apigee-prod --environment=prod --api=$PROXY --file="${PROXY}.zip"
+          gcloud apigee apis import --project=qrec-qa-apigee-prod --environment=prod --api="$PROXY" --file="${PROXY}.zip"
           
           echo "Uploaded proxy: $PROXY to project: qrec-qa-apigee-prod environment: prod"
         done
