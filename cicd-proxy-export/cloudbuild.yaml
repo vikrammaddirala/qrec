@@ -10,9 +10,6 @@ steps:
         SOURCE_ENV="uat"
         DEST_ENV="prod"
         
-        # Authenticate with gcloud (ensure the service account key is set correctly)
-        gcloud auth activate-service-account --key-file=$GOOGLE_APPLICATION_CREDENTIALS
-
         # Loop through each proxy and export, then import to the destination project and environment
         gcloud apigee apis list --project=qrec-qa-apigee-nonprod --environment=uat --format="value(name)" |
         while read -r PROXY; do
