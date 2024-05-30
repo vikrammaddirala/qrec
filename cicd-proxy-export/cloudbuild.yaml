@@ -11,19 +11,19 @@ steps:
         DEST_ENV="prod"
         
         # List all proxies in the source environment
-        PROXIES=$(gcloud apigee apis list --project=$SOURCE_PROJECT --environment=$SOURCE_ENV --format="value(name)")
+        PROXIES=$(gcloud apigee apis list --project=qrec-qa-apigee-nonprod --environment=$SOURCE_ENV --format="value(name)")
 
         # Loop through each proxy and export, then import to the destination project and environment
         for PROXY_NAME in $PROXIES; do
           echo "Processing proxy: $PROXY_NAME"
           
           # Export the proxy
-          gcloud apigee apis export --project=$SOURCE_PROJECT --environment=$SOURCE_ENV --api=$PROXY_NAME --output="${PROXY_NAME}.zip"
+          gcloud apigee apis export --project=qrec-qa-apigee-nonprod --environment=uat --api=$PROXY_NAME --output="${PROXY_NAME}.zip"
           
           # Import the proxy to the destination project
-          gcloud apigee apis import --project=$DEST_PROJECT --environment=$DEST_ENV --api=$PROXY_NAME --file="${PROXY_NAME}.zip"
+          gcloud apigee apis import --project=qrec-qa-apigee-prod --environment=prod --api=$PROXY_NAME --file="${PROXY_NAME}.zip"
           
-          echo "Uploaded proxy: $PROXY_NAME to project: $DEST_PROJECT environment: $DEST_ENV"
+          echo "Uploaded proxy: $PROXY_NAME to project: qrec-qa-apigee-prod environment: prod"
         done
 
 timeout: '3600s'
