@@ -32,5 +32,3 @@ substitutions:
   _APIGEE_DEV_ENV: "dev"
   _APIGEE_UAT_ENV: "dev-int"
 
-options:
-  logging: CLOUD_LOGGING_ONLY
