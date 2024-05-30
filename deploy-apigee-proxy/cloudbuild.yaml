@@ -1,18 +1,36 @@
 steps:
-  # Step 1: Deploy the existing proxy revision to the dev-int environment
-  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+  # Step 1: Get access token and set environment variables
+  - name: 'gcr.io/cloud-builders/gcloud'
+    id: 'Set Variables'
+    entrypoint: 'bash'
+    args:
+      - -c
+      - |
+        export build_token=$(gcloud auth application-default print-access-token)
+        env | grep "^build_" > /workspace/build_vars
+
+  # Step 2: Deploy the existing proxy revision from dev to dev-int
+  - name: 'gcr.io/cloud-builders/curl'
     id: 'Deploy Proxy'
     entrypoint: 'bash'
     args:
-      - '-c'
+      - -c
       - |
-        gcloud auth print-access-token > access_token.txt
-        curl -X POST -H "Authorization: Bearer $(cat access_token.txt)" \
-        -H "Content-Type: application/json" \
-        -d '{}' \
-        "https://apigee.googleapis.com/v1/organizations/qrec-qa-apigee-nonprod/environments/dev-int/apis/helloworld/revisions/1/deployments"
+        source /workspace/build_vars
+        echo "Deploying proxy to Apigee dev-int environment..."
+        # Retrieve the latest revision of the proxy from the dev environment
+        latest_revision=$(curl -X GET "https://apigee.googleapis.com/v1/organizations/${_APIGEE_PROJECT}/environments/${_APIGEE_DEV_ENV}/apis/helloworld" \
+        -H "Authorization: Bearer ${build_token}" | jq -r '.revision | max')
+        # Deploy the latest revision to the dev-int environment
+        curl -X POST "https://apigee.googleapis.com/v1/organizations/${_APIGEE_PROJECT}/environments/${_APIGEE_UAT_ENV}/apis/helloworld/revisions/${latest_revision}/deployments" \
+        -H "Authorization: Bearer ${build_token}"
 
 timeout: '3600s'
+
+substitutions:
+  _APIGEE_PROJECT: "qrec-qa-apigee-nonprod"
+  _APIGEE_DEV_ENV: "dev"
+  _APIGEE_UAT_ENV: "dev-int"
 
 options:
   logging: CLOUD_LOGGING_ONLY
