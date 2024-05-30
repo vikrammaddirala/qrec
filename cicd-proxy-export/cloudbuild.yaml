@@ -11,7 +11,7 @@ steps:
         DEST_ENV="prod"
         
         # List all proxies in the source environment
-        PROXIES=$(gcloud apigee apis list --project=qrec-qa-apigee-nonprod --environment=$SOURCE_ENV --format="value(name)")
+        PROXIES=$(gcloud apigee apis list --project=qrec-qa-apigee-nonprod --environment=uat --format="value(name)")
 
         # Loop through each proxy and export, then import to the destination project and environment
         for PROXY_NAME in $PROXIES; do
