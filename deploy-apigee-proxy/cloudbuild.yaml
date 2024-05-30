@@ -51,5 +51,5 @@ steps:
         -H "Authorization: Bearer ${build_token}"
 
 substitutions:
-  _APIGEE_DEV_ENV: "default-dev"
-  _APIGEE_UAT_ENV: "test-env"
+  _APIGEE_DEV_ENV: "dev"
+  _APIGEE_UAT_ENV: "dev-int"
