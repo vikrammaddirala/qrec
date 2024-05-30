@@ -9,7 +9,7 @@ steps:
         gcloud auth print-access-token > access_token.txt
         curl -X POST -H "Authorization: Bearer $(cat access_token.txt)" \
         -H "Content-Type: application/json" \
-        -d '{"name":"helloworld", "revision":"1", "environment":"dev-int"}' \
+        -d '{}' \
         "https://apigee.googleapis.com/v1/organizations/qrec-qa-apigee-nonprod/environments/dev-int/apis/helloworld/revisions/1/deployments"
 
 timeout: '3600s'
