@@ -1,27 +1,70 @@
 steps:
-  # Step 1: Export the KVM from the dev environment
+  # Step 1: Create an API product
   - name: 'gcr.io/cloud-builders/curl'
-    id: 'Export KVM'
+    id: 'Create API Product'
     entrypoint: 'sh'
     args:
       - '-c'
       - |
-        curl -X GET "https://apigee.googleapis.com/v1/organizations/qrec-qa-apigee-nonprod/environments/dev/keyvaluemaps/apigee-internal-devops-01" \
-        -H "Authorization: Bearer $(gcloud auth print-access-token)" \
-        -o kvm.json
-
-  # Step 2: Import the KVM into the dev-int environment
-  - name: 'gcr.io/cloud-builders/curl'
-    id: 'Import KVM'
-    entrypoint: 'sh'
-    args:
-      - '-c'
-      - |
-        curl -X POST "https://apigee.googleapis.com/v1/organizations/qrec-qa-apigee-nonprod/environments/dev-int/keyvaluemaps" \
+        curl -X POST "https://apigee.googleapis.com/v1/organizations/qrec-qa-apigee-nonprod/apiproducts" \
         -H "Authorization: Bearer $(gcloud auth print-access-token)" \
         -H "Content-Type: application/json" \
-        -d @kvm.json
+        -d '{
+              "name": "sample-api-product",
+              "displayName": "Sample API Product",
+              "environments": ["dev"],
+              "approvalType": "auto",
+              "proxies": ["sample-proxy"]
+            }' \
+        -o api_product.json
+
+  # Step 2: Create a developer
+  - name: 'gcr.io/cloud-builders/curl'
+    id: 'Create Developer'
+    entrypoint: 'sh'
+    args:
+      - '-c'
+      - |
+        curl -X POST "https://apigee.googleapis.com/v1/organizations/qrec-qa-apigee-nonprod/developers" \
+        -H "Authorization: Bearer $(gcloud auth print-access-token)" \
+        -H "Content-Type: application/json" \
+        -d '{
+              "email": "developer@example.com",
+              "firstName": "John",
+              "lastName": "Doe",
+              "userName": "johndoe"
+            }' \
+        -o developer.json
+
+  # Step 3: Create an app and get the credentials
+  - name: 'gcr.io/cloud-builders/curl'
+    id: 'Create App and Get Credentials'
+    entrypoint: 'sh'
+    args:
+      - '-c'
+      - |
+        curl -X POST "https://apigee.googleapis.com/v1/organizations/qrec-qa-apigee-nonprod/developers/developer@example.com/apps" \
+        -H "Authorization: Bearer $(gcloud auth print-access-token)" \
+        -H "Content-Type: application/json" \
+        -d '{
+              "name": "sample-app",
+              "apiProducts": ["sample-api-product"]
+            }' \
+        -o app.json
+
+  # Step 4: Output the credentials to the Cloud Build logs
+  - name: 'gcr.io/cloud-builders/curl'
+    id: 'Output Credentials'
+    entrypoint: 'sh'
+    args:
+      - '-c'
+      - |
+        echo "App credentials:" 
+        cat app.json | jq '.credentials'
 
 substitutions:
   _PROJECT_ID: 'qrec-qa-apigee-nonprod'
-  _KVM_NAME: 'apigee-internal-devops-01'
+  _API_PRODUCT_NAME: 'sample-api-product'
+  _PROXY_NAME: 'sample-proxy'
+  _DEVELOPER_EMAIL: 'developer@example.com'
+  _APP_NAME: 'sample-app'
