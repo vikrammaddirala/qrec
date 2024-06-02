@@ -14,7 +14,7 @@ steps:
               "displayName": "Sample API Product",
               "environments": ["dev"],
               "approvalType": "auto",
-              "proxies": ["sample-proxy"]
+              "proxies": ["helloworld"]
             }' \
         -o api_product.json
 
@@ -65,6 +65,6 @@ steps:
 substitutions:
   _PROJECT_ID: 'qrec-qa-apigee-nonprod'
   _API_PRODUCT_NAME: 'sample-api-product'
-  _PROXY_NAME: 'sample-proxy'
+  _PROXY_NAME: 'helloworld'
   _DEVELOPER_EMAIL: 'developer@example.com'
   _APP_NAME: 'sample-app'
