@@ -6,7 +6,7 @@ steps:
     args:
       - '-c'
       - |
-        curl -X DELETE "https://apigee.googleapis.com/v1/organizations/$PROJECT_ID/environments/dev-int/sharedflows/$SHARED_FLOW_NAME/revisions/$REVISION_NUMBER/deployments" \
+        curl -X DELETE "https://apigee.googleapis.com/v1/organizations/qrec-qa-apigee-nonprod/environments/dev-int/sharedflows/commonSF_devops__v1/revisions/1/deployments" \
         -H "Authorization: Bearer $(gcloud auth print-access-token)" || true
 
   # Step 2: Deploy the shared flow to the dev-int environment
@@ -16,10 +16,10 @@ steps:
     args:
       - '-c'
       - |
-        curl -X POST "https://apigee.googleapis.com/v1/organizations/$PROJECT_ID/environments/dev-int/sharedflows/$SHARED_FLOW_NAME/revisions/$REVISION_NUMBER/deployments" \
+        curl -X POST "https://apigee.googleapis.com/v1/organizations/qrec-qa-apigee-nonprod/environments/dev-int/sharedflows/commonSF_devops__v1/revisions/1/deployments" \
         -H "Authorization: Bearer $(gcloud auth print-access-token)"
 
 substitutions:
-  _PROJECT_ID: 'YOUR_PROJECT_ID'
-  _SHARED_FLOW_NAME: 'YOUR_SHARED_FLOW_NAME'
-  _REVISION_NUMBER: 'YOUR_REVISION_NUMBER'
+  _PROJECT_ID: 'qrec-qa-apigee-nonprod'
+  _SHARED_FLOW_NAME: 'commonSF_devops__v1'
+  _REVISION_NUMBER: '1'
