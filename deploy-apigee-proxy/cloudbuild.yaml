@@ -16,7 +16,7 @@ steps:
       - |
         source /workspace/build_vars
         echo "Deploying proxy from dev to dev-int in Apigee..."
-        curl -X POST "https://apigee.googleapis.com/v1/organizations/qrec-qa-apigee-nonprod/environments/dev/apis/helloworld/revisions/1/deployments" \
+        curl -X POST "https://apigee.googleapis.com/v1/organizations/qrec-qa-apigee-nonprod/environments/dev-int/apis/helloworld/revisions/1/deployments" \
         -H "Authorization: Bearer ${build_token}"
 
 substitutions:
