@@ -1,14 +1,12 @@
 steps:
-  # Step 1: Deploy the proxy from the dev environment to the dev-int environment
-  - name: 'gcr.io/cloud-builders/curl'
-    id: 'Deploy Proxy Bundle'
-    entrypoint: 'sh'
+  - name: 'gcr.io/cloud-builders/gcloud'
+    id: "Deploy Proxy Bundle"
+    entrypoint: 'bash'
     args:
-      - '-c'
+      - -c
       - |
-        curl -X POST "https://apigee.googleapis.com/v1/organizations/qrec-qa-apigee-nonprod/environments/dev-int/apis/helloworld/revisions/1/deployments" \
-        -H "Authorization: Bearer $(gcloud auth print-access-token)"
+        echo "Deploying proxy from dev to dev-int in Apigee..."
+        gcloud apigee deployments create --name=helloworld --source=dev --environment=dev-int
 
 substitutions:
   _PROJECT_ID: 'qrec-qa-apigee-nonprod'
-  _PROXY_NAME: 'helloworld'
