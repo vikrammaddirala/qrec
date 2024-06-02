@@ -1,13 +1,13 @@
 steps:
   # Step 1: Undeploy the shared flow from the dev-int environment if already deployed
-  - name: 'gcr.io/cloud-builders/curl'
-    id: 'Undeploy Shared Flow (if exists)'
-    entrypoint: 'sh'
-    args:
-      - '-c'
-      - |
-        curl -X DELETE "https://apigee.googleapis.com/v1/organizations/qrec-qa-apigee-nonprod/environments/dev-int/sharedflows/commonSF_devops__v1/revisions/1/deployments" \
-        -H "Authorization: Bearer $(gcloud auth print-access-token)" || true
+  # - name: 'gcr.io/cloud-builders/curl'
+  #   id: 'Undeploy Shared Flow (if exists)'
+  #   entrypoint: 'sh'
+  #   args:
+  #     - '-c'
+  #     - |
+  #       curl -X DELETE "https://apigee.googleapis.com/v1/organizations/qrec-qa-apigee-nonprod/environments/dev-int/sharedflows/commonSF_devops__v1/revisions/1/deployments" \
+  #       -H "Authorization: Bearer $(gcloud auth print-access-token)" || true
 
   # Step 2: Deploy the shared flow to the dev-int environment
   - name: 'gcr.io/cloud-builders/curl'
