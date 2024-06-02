@@ -1,0 +1,27 @@
+steps:
+  # Step 1: Export the KVM from the dev environment
+  - name: 'gcr.io/cloud-builders/curl'
+    id: 'Export KVM'
+    entrypoint: 'sh'
+    args:
+      - '-c'
+      - |
+        curl -X GET "https://apigee.googleapis.com/v1/organizations/qrec-qa-apigee-nonprod/environments/dev/keyvaluemaps/apigee-internal-devops-01" \
+        -H "Authorization: Bearer $(gcloud auth print-access-token)" \
+        -o kvm.json
+
+  # Step 2: Import the KVM into the dev-int environment
+  - name: 'gcr.io/cloud-builders/curl'
+    id: 'Import KVM'
+    entrypoint: 'sh'
+    args:
+      - '-c'
+      - |
+        curl -X POST "https://apigee.googleapis.com/v1/organizations/qrec-qa-apigee-nonprod/environments/dev-int/keyvaluemaps" \
+        -H "Authorization: Bearer $(gcloud auth print-access-token)" \
+        -H "Content-Type: application/json" \
+        -d @kvm.json
+
+substitutions:
+  _PROJECT_ID: 'qrec-qa-apigee-nonprod'
+  _KVM_NAME: 'apigee-internal-devops-01'
