@@ -15,11 +15,8 @@ steps:
       - -c
       - |
         source /workspace/build_vars
-        echo "Deploying proxy to Apigee test environment..."
-        curl -X POST "https://apigee.googleapis.com/v1/organizations/apigee-x-379708/apis?action=import&name=helloworld" \
-        -H "Authorization: Bearer ${build_token}" \
-        -F "file=@/workspace/proxy.zip"
-        curl -X POST "https://apigee.googleapis.com/v1/organizations/apigee-x-379708/environments/${_APIGEE_UAT_ENV}/apis/helloworld/revisions/1/deployments" \
+        echo "Deploying proxy from dev to dev-int in Apigee..."
+        curl -X POST "https://apigee.googleapis.com/v1/organizations/	qrec-qa-apigee-nonprod/environments/dev/apis/helloworld/revisions/1/deployments" \
         -H "Authorization: Bearer ${build_token}"
 
 substitutions:
