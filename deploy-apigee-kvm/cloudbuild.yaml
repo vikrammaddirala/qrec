@@ -22,6 +22,10 @@ steps:
         -H "Authorization: Bearer ${build_token}" \
         -o /workspace/kvm.json
 
+        echo "Checking if kvm.json is valid JSON..."
+        cat /workspace/kvm.json
+        jq . /workspace/kvm.json > /dev/null || { echo "Invalid JSON payload"; exit 1; }
+
   # Step 3: Import the KVM into the dev-int environment
   - name: 'gcr.io/cloud-builders/curl'
     id: 'Import KVM'
