@@ -18,16 +18,9 @@ steps:
       - |
         source /workspace/build_vars
         echo "Exporting KVM from dev environment..."
-        response=$(curl -s -w "%{http_code}" -o /workspace/kvm.json \
-          -X GET "https://apigee.googleapis.com/v1/organizations/${_PROJECT_ID}/environments/dev/keyvaluemaps/${_KVM_NAME}" \
-          -H "Authorization: Bearer ${build_token}")
-
-        http_code=$(echo "$response" | tail -n1)
-        if [ "$http_code" != "200" ]; then
-          echo "Failed to export KVM. HTTP status code: $http_code"
-          cat /workspace/kvm.json
-          exit 1
-        fi
+        curl -X GET "https://apigee.googleapis.com/v1/organizations/${_PROJECT_ID}/environments/dev/keyvaluemaps/${_KVM_NAME}" \
+        -H "Authorization: Bearer ${build_token}" \
+        -o /workspace/kvm.json
 
   # Step 3: Import the KVM into the dev-int environment
   - name: 'gcr.io/cloud-builders/curl'
