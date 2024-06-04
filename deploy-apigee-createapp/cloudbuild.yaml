@@ -1,4 +1,5 @@
 steps:
+  # Step 1: Set Variables and Fetch Access Token
   - name: 'gcr.io/cloud-builders/gcloud'
     id: variables
     entrypoint: 'bash'
@@ -8,6 +9,19 @@ steps:
         export build_token=\"$(gcloud auth application-default print-access-token)\"
         env | grep "^build_" > /workspace/build_vars
 
+  # Step 2: Fetch Product Details from Dev Environment
+  - name: 'gcr.io/cloud-builders/curl'
+    id: "Fetch Product Details"
+    entrypoint: 'bash'
+    args:
+      - -c
+      - |
+        source /workspace/build_vars
+        echo "Fetching product details from dev environment..."
+        curl -X GET "https://apigee.googleapis.com/v1/organizations/${_APIGEE_PROJECT}/apiproducts/apigee-internal-devops" \
+        -H "Authorization: Bearer ${build_token}" > /workspace/product_details.json
+
+  # Step 3: Deploy Product to Dev-Int Environment
   - name: 'gcr.io/cloud-builders/curl'
     id: "Deploy Product"
     entrypoint: 'bash'
@@ -15,30 +29,8 @@ steps:
       - -c
       - |
         source /workspace/build_vars
-        echo "Deploying product from dev to dev-int in Apigee..."
-        curl -X POST "https://apigee.googleapis.com/v1/organizations/${_APIGEE_PROJECT}/environments/${_APIGEE_UAT_ENV}/apiproducts/apigee-internal-devops" \
-        -H "Authorization: Bearer ${build_token}"
-
-  - name: 'gcr.io/cloud-builders/curl'
-    id: "Deploy App"
-    entrypoint: 'bash'
-    args:
-      - -c
-      - |
-        source /workspace/build_vars
-        echo "Deploying app from dev to dev-int in Apigee..."
-        curl -X POST "https://apigee.googleapis.com/v1/organizations/${_APIGEE_PROJECT}/environments/${_APIGEE_UAT_ENV}/apps/internal-dev-devops" \
-        -H "Authorization: Bearer ${build_token}"
-
-  - name: 'gcr.io/cloud-builders/curl'
-    id: "Add Proxy to Product"
-    entrypoint: 'bash'
-    args:
-      - -c
-      - |
-        source /workspace/build_vars
-        echo "Adding proxy to product in Apigee..."
-        curl -X PATCH "https://apigee.googleapis.com/v1/organizations/${_APIGEE_PROJECT}/apiproducts/apigee-internal-devops" \
+        echo "Deploying product to dev-int environment..."
+        curl -X POST "https://apigee.googleapis.com/v1/organizations/${_APIGEE_PROJECT}/apiproducts" \
         -H "Authorization: Bearer ${build_token}" \
         -H "Content-Type: application/json" \
-        -d '{"proxies": ["kvm_ops_v1"]}'
+        -d @/workspace/product_details.json
