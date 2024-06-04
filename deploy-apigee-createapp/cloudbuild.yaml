@@ -1,70 +1,55 @@
 steps:
-  # Step 1: Create an API product
-  - name: 'gcr.io/cloud-builders/curl'
-    id: 'Create API Product'
-    entrypoint: 'sh'
+  - name: 'gcr.io/cloud-builders/gcloud'
+    id: variables
+    entrypoint: 'bash'
     args:
-      - '-c'
+      - -c
       - |
-        curl -X POST "https://apigee.googleapis.com/v1/organizations/qrec-qa-apigee-nonprod/apiproducts" \
-        -H "Authorization: Bearer $(gcloud auth print-access-token)" \
+        export build_token=\"$(gcloud auth application-default print-access-token)\"
+        env | grep "^build_" > /workspace/build_vars
+
+  - name: 'gcr.io/cloud-builders/curl'
+    id: "Deploy Shared Flow Bundle"
+    entrypoint: 'bash'
+    args:
+      - -c
+      - |
+        source /workspace/build_vars
+        echo "Deploying shared flow from dev to dev-int in Apigee..."
+        curl -X POST "https://apigee.googleapis.com/v1/organizations/${_APIGEE_PROJECT}/environments/${_APIGEE_UAT_ENV}/sharedflows/commonSF_devops__v1/revisions/1/deployments" \
+        -H "Authorization: Bearer ${build_token}"
+
+  - name: 'gcr.io/cloud-builders/curl'
+    id: "Deploy Product"
+    entrypoint: 'bash'
+    args:
+      - -c
+      - |
+        source /workspace/build_vars
+        echo "Deploying product from dev to dev-int in Apigee..."
+        curl -X POST "https://apigee.googleapis.com/v1/organizations/${_APIGEE_PROJECT}/environments/${_APIGEE_UAT_ENV}/apiproducts/apigee-internal-devops" \
+        -H "Authorization: Bearer ${build_token}"
+
+  - name: 'gcr.io/cloud-builders/curl'
+    id: "Deploy App"
+    entrypoint: 'bash'
+    args:
+      - -c
+      - |
+        source /workspace/build_vars
+        echo "Deploying app from dev to dev-int in Apigee..."
+        curl -X POST "https://apigee.googleapis.com/v1/organizations/${_APIGEE_PROJECT}/environments/${_APIGEE_UAT_ENV}/apps/internal-dev-devops" \
+        -H "Authorization: Bearer ${build_token}"
+
+  - name: 'gcr.io/cloud-builders/curl'
+    id: "Add Proxy to Product"
+    entrypoint: 'bash'
+    args:
+      - -c
+      - |
+        source /workspace/build_vars
+        echo "Adding proxy to product in Apigee..."
+        curl -X PATCH "https://apigee.googleapis.com/v1/organizations/${_APIGEE_PROJECT}/apiproducts/apigee-internal-devops" \
+        -H "Authorization: Bearer ${build_token}" \
         -H "Content-Type: application/json" \
-        -d '{
-              "name": "sample-api-product",
-              "displayName": "Sample API Product",
-              "environments": ["dev"],
-              "approvalType": "auto",
-              "proxies": ["helloworld"]
-            }' \
-        -o api_product.json
-
-  # Step 2: Create a developer
-  - name: 'gcr.io/cloud-builders/curl'
-    id: 'Create Developer'
-    entrypoint: 'sh'
-    args:
-      - '-c'
-      - |
-        curl -X POST "https://apigee.googleapis.com/v1/organizations/qrec-qa-apigee-nonprod/developers" \
-        -H "Authorization: Bearer $(gcloud auth print-access-token)" \
-        -H "Content-Type: application/json" \
-        -d '{
-              "email": "developer@example.com",
-              "firstName": "John",
-              "lastName": "Doe",
-              "userName": "johndoe"
-            }' \
-        -o developer.json
-
-  # Step 3: Create an app and get the credentials
-  - name: 'gcr.io/cloud-builders/curl'
-    id: 'Create App and Get Credentials'
-    entrypoint: 'sh'
-    args:
-      - '-c'
-      - |
-        curl -X POST "https://apigee.googleapis.com/v1/organizations/qrec-qa-apigee-nonprod/developers/developer@example.com/apps" \
-        -H "Authorization: Bearer $(gcloud auth print-access-token)" \
-        -H "Content-Type: application/json" \
-        -d '{
-              "name": "sample-app",
-              "apiProducts": ["sample-api-product"]
-            }' \
-        -o app.json
-
-  # Step 4: Output the credentials to the Cloud Build logs
-  - name: 'gcr.io/cloud-builders/curl'
-    id: 'Output Credentials'
-    entrypoint: 'sh'
-    args:
-      - '-c'
-      - |
-        echo "App credentials:" 
-        cat app.json | jq '.credentials'
-
-substitutions:
-  _PROJECT_ID: 'qrec-qa-apigee-nonprod'
-  _API_PRODUCT_NAME: 'sample-api-product'
-  _PROXY_NAME: 'helloworld'
-  _DEVELOPER_EMAIL: 'developer@example.com'
-  _APP_NAME: 'sample-app'
+        -d '{"proxies": ["kvm_ops_v1"]}'
