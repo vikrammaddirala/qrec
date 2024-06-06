@@ -9,8 +9,8 @@ steps:
         export build_token="$(gcloud auth application-default print-access-token)"
         env | grep "^build_" > /workspace/build_vars
 
-  # Step 2: Create a KVM in the dev environment
-  - name: 'gcr.io/cloud-builders/curl'
+  # Step 2: Create KVM using the script
+  - name: 'gcr.io/cloud-builders/docker'
     id: "Create KVM"
     entrypoint: 'bash'
     args:
@@ -18,20 +18,4 @@ steps:
       - |
         source /workspace/build_vars
         echo "Creating KVM in dev environment..."
-        curl -X POST "https://apigee.googleapis.com/v1/organizations/${_APIGEE_PROJECT}/environments/dev/keyvaluemaps" \
-        -H "Authorization: Bearer ${build_token}" \
-        -H "Content-Type: application/json" \
-        -d '{
-            "name": "SampleKVM",
-            "encrypted": false,
-            "entry": [
-                {
-                    "name": "COMPANY",
-                    "value": "example.com"
-                },
-                {
-                    "name": "LOCATION",
-                    "value": "San Francisco"
-                }
-            ]
-        }'
+        bash create_kvm.sh
