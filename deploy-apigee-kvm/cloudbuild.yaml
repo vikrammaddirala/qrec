@@ -19,7 +19,7 @@ steps:
         source /workspace/build_vars
         echo "Deploying KVM from dev to dev-int in Apigee..."
         curl -X POST "https://apigee.googleapis.com/v1/organizations/${_APIGEE_PROJECT}/environments/${_APIGEE_UAT_ENV}/keyvaluemaps" \
-        -H "Authorization: Bearer ${build_token}"
+        -H "Authorization: Bearer ${build_token}" \
         -H "Content-Type: application/json" \
         -d '{
           "name": "apigee-internal-01",
@@ -33,6 +33,5 @@ steps:
               "name": "key2",
               "value": "value2"
             }
-            // Add more key-value pairs as needed
           ]
         }'
