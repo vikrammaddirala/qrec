@@ -22,20 +22,11 @@ steps:
         -H "Authorization: Bearer ${build_token}" \
         -H "Content-Type: application/json" \
         -d '{
-          "name": "sample-kvm",
-          "encrypted": false,
-          "entry": [
-            {
-              "name": "key1",
-              "value": "value1"
-            },
-            {
-              "name": "key2",
-              "value": "value2"
-            },
-            {
-              "name": "key3",
-              "value": "value3"
-            }
-          ]
+            "name": "SampleKVM",
+            "entry": [
+                {
+                    "name": "COMPANY",
+                    "value": "example.com"
+                }
+            ]
         }'
