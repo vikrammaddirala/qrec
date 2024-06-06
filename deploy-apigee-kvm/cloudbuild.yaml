@@ -23,14 +23,8 @@ steps:
         -H "Content-Type: application/json" \
         -d '{
             "name": "SampleKVM",
-            "values": [
-                {
-                    "name": "COMPANY",
-                    "value": "example.com"
-                },
-                {
-                    "name": "LOCATION",
-                    "value": "San Francisco"
-                }
-            ]
+            "entry": {
+                "COMPANY": "example.com",
+                "LOCATION": "San Francisco"
+            }
         }'
