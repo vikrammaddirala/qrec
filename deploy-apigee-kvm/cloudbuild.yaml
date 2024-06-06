@@ -1,5 +1,22 @@
 steps:
-  # Step 1: Get an authentication token and store it in a file
+  # Step 0: Make create_kvm.sh executable
+  - name: 'gcr.io/cloud-builders/gcloud'
+    entrypoint: 'bash'
+    args:
+      - -c
+      - |
+        chmod +x deploy-apigee-kvm/create_kvm.sh
+
+  # Step 1: Execute create_kvm.sh script
+  - name: 'gcr.io/cloud-builders/gcloud'
+    id: create-kvm-script
+    entrypoint: 'bash'
+    args:
+      - -c
+      - |
+        ./deploy-apigee-kvm/create_kvm.sh
+
+  # Step 2: Get authentication token and store it in a file
   - name: 'gcr.io/cloud-builders/gcloud'
     id: variables
     entrypoint: 'bash'
@@ -8,21 +25,3 @@ steps:
       - |
         export build_token="$(gcloud auth application-default print-access-token)"
         env | grep "^build_" > /workspace/build_vars
-
-  # Step 2: Create KVM using the script
-  - name: 'gcr.io/cloud-builders/docker'
-    id: "Set Permissions"
-    entrypoint: 'bash'
-    args:
-      - -c
-      - |
-        chmod +x /workspace/deploy-apigee-kvm/create_kvm.sh
-
-  # Step 1: Execute create_kvm.sh script
-  - name: 'gcr.io/cloud-builders/docker'
-    id: "Create KVM"
-    entrypoint: 'bash'
-    args:
-      - -c
-      - |
-        /workspace/deploy-apigee-kvm/create_kvm.sh
