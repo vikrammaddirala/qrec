@@ -24,7 +24,7 @@ steps:
         -d '{
           "name": "sample-kvm",
           "encrypted": false,
-          "entries": [
+          "entry": [
             {
               "name": "key1",
               "value": "value1"
