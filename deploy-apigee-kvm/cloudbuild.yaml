@@ -21,12 +21,14 @@ steps:
         curl -X POST "https://apigee.googleapis.com/v1/organizations/${_APIGEE_PROJECT}/environments/dev/keyvaluemaps" \
         -H "Authorization: Bearer ${build_token}" \
         -H "Content-Type: application/json" \
-        -d '{
-            "name": "SampleKVM",
-            "entry": [
-                {
-                    "name": "COMPANY",
-                    "value": "example.com"
-                }
-            ]
-        }'
+        -d '[
+            {
+                "entry": [
+                    {
+                        "name": "COMPANY",
+                        "value": "example.com"
+                    }
+                ],
+                "name": "SampleKVM"
+            }
+        ]'
