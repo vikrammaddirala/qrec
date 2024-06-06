@@ -6,8 +6,8 @@ steps:
     args:
       - -c
       - |
-        export build_token=\"$(gcloud auth application-default print-access-token)\"
-        env | grep "^build_" > /workspace/build_vars
+        export build_token="$(gcloud auth application-default print-access-token)"
+        echo "build_token=$build_token" > /workspace/build_vars
 
   # Step 2: Fetch Product Details from Dev Environment
   - name: 'gcr.io/cloud-builders/curl'
@@ -21,7 +21,18 @@ steps:
         curl -X GET "https://apigee.googleapis.com/v1/organizations/${_APIGEE_PROJECT}/apiproducts/apigee-internal-devops" \
         -H "Authorization: Bearer ${build_token}" > /workspace/product_details.json
 
-  # Step 3: Deploy Product to Dev-Int Environment
+  # Step 3: Modify Product Details for Dev-Int Environment (if needed)
+  - name: 'gcr.io/cloud-builders/bash'
+    id: "Modify Product Details"
+    entrypoint: 'bash'
+    args:
+      - -c
+      - |
+        # Modify the product details as needed for dev-int environment
+        # Here you can add any jq commands to modify the JSON file
+        cp /workspace/product_details.json /workspace/product_details_devint.json
+
+  # Step 4: Deploy Product to Dev-Int Environment
   - name: 'gcr.io/cloud-builders/curl'
     id: "Deploy Product"
     entrypoint: 'bash'
@@ -33,4 +44,4 @@ steps:
         curl -X POST "https://apigee.googleapis.com/v1/organizations/${_APIGEE_PROJECT}/apiproducts" \
         -H "Authorization: Bearer ${build_token}" \
         -H "Content-Type: application/json" \
-        -d @/workspace/product_details.json
+        -d @/workspace/product_details_devint.json
