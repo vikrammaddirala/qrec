@@ -21,7 +21,33 @@ steps:
         curl -X GET "https://apigee.googleapis.com/v1/organizations/${_APIGEE_PROJECT}/apiproducts/apigee-internal-devops" \
         -H "Authorization: Bearer ${build_token}" > /workspace/product_details.json
 
-  # Step 3: Deploy Product to Dev-Int Environment
+  # Step 3: Fetch Proxy Details from Dev Environment
+  - name: 'gcr.io/cloud-builders/curl'
+    id: "Fetch Proxy Details"
+    entrypoint: 'bash'
+    args:
+      - -c
+      - |
+        source /workspace/build_vars
+        echo "Fetching proxy details from dev environment..."
+        curl -X GET "https://apigee.googleapis.com/v1/organizations/${_APIGEE_PROJECT}/apis/YOUR_PROXY_NAME/revisions/1" \
+        -H "Authorization: Bearer ${build_token}" > /workspace/proxy_details.zip
+
+  # Step 4: Deploy Proxy to Dev-Int Environment
+  - name: 'gcr.io/cloud-builders/curl'
+    id: "Deploy Proxy"
+    entrypoint: 'bash'
+    args:
+      - -c
+      - |
+        source /workspace/build_vars
+        echo "Deploying proxy to dev-int environment..."
+        curl -X POST "https://apigee.googleapis.com/v1/organizations/${_APIGEE_PROJECT}/environments/dev-int/apis?action=import&name=YOUR_PROXY_NAME" \
+        -H "Authorization: Bearer ${build_token}" \
+        -H "Content-Type: multipart/form-data" \
+        -F "file=@/workspace/proxy_details.zip"
+
+  # Step 5: Deploy Product to Dev-Int Environment
   - name: 'gcr.io/cloud-builders/curl'
     id: "Deploy Product"
     entrypoint: 'bash'
@@ -30,7 +56,7 @@ steps:
       - |
         source /workspace/build_vars
         echo "Deploying product to dev-int environment..."
-        curl -X POST "https://apigee.googleapis.com/v1/organizations/${_APIGEE_PROJECT}/apiproducts" \
+        curl -X PUT "https://apigee.googleapis.com/v1/organizations/${_APIGEE_PROJECT}/apiproducts/apigee-internal-devops" \
         -H "Authorization: Bearer ${build_token}" \
         -H "Content-Type: application/json" \
         -d @/workspace/product_details.json
