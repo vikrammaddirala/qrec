@@ -14,7 +14,7 @@ steps:
     args:
       - '-X'
       - 'GET'
-      - 'https://apigee.googleapis.com/v1/organizations/ORGANIZATION_ID/environments/dev/keyvaluemaps/apigee-internal-01'
+      - 'https://apigee.googleapis.com/v1/organizations/ORGANIZATION_ID/environments/dev/keyvaluemaps/apigee-internal-devops-01'
       - '-H'
       - 'Authorization: Bearer $(cat /workspace/build_vars | grep build_token | cut -d= -f2)'
 
@@ -31,7 +31,7 @@ steps:
       - '-d'
       - |
         {
-          "name": "apigee-internal-01",
+          "name": "apigee-internal-devops-01",
           "encrypted": false,  # Adjust as per your encryption requirements
           "entry": [
             {
