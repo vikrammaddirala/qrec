@@ -30,7 +30,7 @@ steps:
       - |
         source /workspace/build_vars
         echo "Deploying product to dev-int environment..."
-        curl -X PUT "https://apigee.googleapis.com/v1/organizations/${_APIGEE_PROJECT}/apiproducts/apigee-internal-devops" \
+        curl -X POST "https://apigee.googleapis.com/v1/organizations/${_APIGEE_PROJECT}/apiproducts" \
         -H "Authorization: Bearer ${build_token}" \
         -H "Content-Type: application/json" \
         -d @/workspace/product_details.json
