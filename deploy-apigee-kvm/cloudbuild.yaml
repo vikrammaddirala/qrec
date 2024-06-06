@@ -11,11 +11,18 @@ steps:
 
   # Step 2: Create KVM using the script
   - name: 'gcr.io/cloud-builders/docker'
+    id: "Set Permissions"
+    entrypoint: 'bash'
+    args:
+      - -c
+      - |
+        chmod +x /workspace/deploy-apigee-kvm/create_kvm.sh
+
+  # Step 1: Execute create_kvm.sh script
+  - name: 'gcr.io/cloud-builders/docker'
     id: "Create KVM"
     entrypoint: 'bash'
     args:
       - -c
       - |
-        source /workspace/build_vars
-        echo "Creating KVM in dev environment..."
-        bash deploy-apigee-kvm/create_kvm.sh
+        /workspace/deploy-apigee-kvm/create_kvm.sh
