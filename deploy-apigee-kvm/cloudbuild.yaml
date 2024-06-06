@@ -6,8 +6,8 @@ steps:
     args:
       - -c
       - |
-        export BUILD_TOKEN="$(gcloud auth application-default print-access-token)"
-        env | grep "^BUILD_" > /workspace/build_vars
+        export build_token=\"$(gcloud auth application-default print-access-token)\"
+        env | grep "^build_" > /workspace/build_vars
 
   # Step 2: Deploy the KVM from dev to dev-int in Apigee
   - name: 'gcr.io/cloud-builders/curl'
@@ -19,7 +19,7 @@ steps:
         source /workspace/build_vars
         echo "Deploying KVM from dev to dev-int in Apigee..."
         curl -X POST "https://apigee.googleapis.com/v1/organizations/${_APIGEE_PROJECT}/environments/${_APIGEE_UAT_ENV}/keyvaluemaps" \
-        -H "Authorization: Bearer ${BUILD_TOKEN}" \
+        -H "Authorization: Bearer ${build_token}"
         -H "Content-Type: application/json" \
         -d '{
           "name": "apigee-internal-01",
