@@ -9,33 +9,39 @@ steps:
         export build_token="$(gcloud auth application-default print-access-token)"
         env | grep "^build_" > /workspace/build_vars
 
-  # Step 2: Export the KVM from the dev environment
+  # Step 2: Fetch the KVM details from the dev environment
   - name: 'gcr.io/cloud-builders/curl'
-    id: 'Export KVM'
-    entrypoint: 'bash'
     args:
-      - -c
-      - |
-        source /workspace/build_vars
-        echo "Exporting KVM from dev environment..."
-        curl -X GET "https://apigee.googleapis.com/v1/organizations/${_PROJECT_ID}/environments/dev/keyvaluemaps/${_KVM_NAME}" \
-        -H "Authorization: Bearer ${build_token}" \
-        -o /workspace/kvm.json
+      - '-X'
+      - 'GET'
+      - 'https://apigee.googleapis.com/v1/organizations/ORGANIZATION_ID/environments/dev/keyvaluemaps/apigee-internal-01'
+      - '-H'
+      - 'Authorization: Bearer $(cat /workspace/build_vars | grep build_token | cut -d= -f2)'
 
-  # Step 3: Import the KVM into the dev-int environment
+  # Step 3: Deploy the fetched KVM to the dev-int environment
   - name: 'gcr.io/cloud-builders/curl'
-    id: 'Import KVM'
-    entrypoint: 'bash'
     args:
-      - -c
+      - '-X'
+      - 'POST'
+      - 'https://apigee.googleapis.com/v1/organizations/ORGANIZATION_ID/environments/dev-int/keyvaluemaps'
+      - '-H'
+      - 'Authorization: Bearer $(cat /workspace/build_vars | grep build_token | cut -d= -f2)'
+      - '-H'
+      - 'Content-Type: application/json'
+      - '-d'
       - |
-        source /workspace/build_vars
-        echo "Importing KVM into dev-int environment..."
-        curl -X POST "https://apigee.googleapis.com/v1/organizations/${_PROJECT_ID}/environments/dev-int/keyvaluemaps" \
-        -H "Authorization: Bearer ${build_token}" \
-        -H "Content-Type: application/json" \
-        -d @/workspace/kvm.json
-
-substitutions:
-  _PROJECT_ID: 'qrec-qa-apigee-nonprod'
-  _KVM_NAME: 'apigee-internal-devops-01'
+        {
+          "name": "apigee-internal-01",
+          "encrypted": false,  # Adjust as per your encryption requirements
+          "entry": [
+            {
+              "name": "key1",
+              "value": "value1"
+            },
+            {
+              "name": "key2",
+              "value": "value2"
+            }
+            # Add more key-value pairs as needed
+          ]
+        }
