@@ -24,8 +24,14 @@ steps:
         -d '{
             "name": "SampleKVM",
             "encrypted": false,
-            "entry": {
-                "COMPANY": "example.com",
-                "LOCATION": "San Francisco"
-            }
+            "entry": [
+                {
+                    "name": "COMPANY",
+                    "value": "example.com"
+                },
+                {
+                    "name": "LOCATION",
+                    "value": "San Francisco"
+                }
+            ]
         }'
