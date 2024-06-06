@@ -30,7 +30,7 @@ steps:
       - |
         source /workspace/build_vars
         echo "Fetching proxy details from dev environment..."
-        curl -X GET "https://apigee.googleapis.com/v1/organizations/${_APIGEE_PROJECT}/apis/YOUR_PROXY_NAME/revisions/1" \
+        curl -X GET "https://apigee.googleapis.com/v1/organizations/${_APIGEE_PROJECT}/apis/helloworld/revisions/1" \
         -H "Authorization: Bearer ${build_token}" > /workspace/proxy_details.zip
 
   # Step 4: Deploy Proxy to Dev-Int Environment
@@ -42,7 +42,7 @@ steps:
       - |
         source /workspace/build_vars
         echo "Deploying proxy to dev-int environment..."
-        curl -X POST "https://apigee.googleapis.com/v1/organizations/${_APIGEE_PROJECT}/environments/dev-int/apis?action=import&name=YOUR_PROXY_NAME" \
+        curl -X POST "https://apigee.googleapis.com/v1/organizations/${_APIGEE_PROJECT}/environments/dev-int/apis?action=import&name=helloworld" \
         -H "Authorization: Bearer ${build_token}" \
         -H "Content-Type: multipart/form-data" \
         -F "file=@/workspace/proxy_details.zip"
