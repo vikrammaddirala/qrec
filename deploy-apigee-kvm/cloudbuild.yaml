@@ -9,7 +9,7 @@ steps:
         export build_token="$(gcloud auth application-default print-access-token)"
         env | grep "^build_" > /workspace/build_vars
 
-  # Step 2: Create a sample KVM with a few name-value pairs and deploy it to the dev environment
+  # Step 2: Create a KVM in the dev environment
   - name: 'gcr.io/cloud-builders/curl'
     id: "Create KVM"
     entrypoint: 'bash'
@@ -23,6 +23,7 @@ steps:
         -H "Content-Type: application/json" \
         -d '{
             "name": "SampleKVM",
+            "encrypted": false,
             "entry": {
                 "COMPANY": "example.com",
                 "LOCATION": "San Francisco"
