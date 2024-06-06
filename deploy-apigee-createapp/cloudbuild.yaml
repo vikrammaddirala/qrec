@@ -21,38 +21,7 @@ steps:
         curl -X GET "https://apigee.googleapis.com/v1/organizations/${_APIGEE_PROJECT}/apiproducts/apigee-internal-devops" \
         -H "Authorization: Bearer ${build_token}" > /workspace/product_details.json
 
-  # Step 3: Print Product Details for Debugging
-  - name: 'gcr.io/cloud-builders/bash'
-    id: "Print Product Details"
-    entrypoint: 'bash'
-    args:
-      - -c
-      - |
-        echo "Product details JSON:"
-        cat /workspace/product_details.json
-
-  # Step 4: Modify Product Details for Dev-Int Environment (if needed)
-  - name: 'gcr.io/cloud-builders/bash'
-    id: "Modify Product Details"
-    entrypoint: 'bash'
-    args:
-      - -c
-      - |
-        # Modify the product details as needed for dev-int environment
-        # Here you can add any jq commands to modify the JSON file
-        cp /workspace/product_details.json /workspace/product_details_devint.json
-
-  # Step 5: Print Modified Product Details for Debugging
-  - name: 'gcr.io/cloud-builders/bash'
-    id: "Print Modified Product Details"
-    entrypoint: 'bash'
-    args:
-      - -c
-      - |
-        echo "Modified product details JSON:"
-        cat /workspace/product_details_devint.json
-
-  # Step 6: Deploy Product to Dev-Int Environment
+  # Step 3: Deploy Product to Dev-Int Environment
   - name: 'gcr.io/cloud-builders/curl'
     id: "Deploy Product"
     entrypoint: 'bash'
@@ -61,7 +30,7 @@ steps:
       - |
         source /workspace/build_vars
         echo "Deploying product to dev-int environment..."
-        curl -X POST "https://apigee.googleapis.com/v1/organizations/${_APIGEE_PROJECT}/apiproducts" \
+        curl -X POST "https://apigee.googleapis.com/v1/organizations/${_APIGEE_PROJECT}/environments/dev-int/apiproducts" \
         -H "Authorization: Bearer ${build_token}" \
         -H "Content-Type: application/json" \
-        -d @/workspace/product_details_devint.json
+        -d @/workspace/product_details.json
