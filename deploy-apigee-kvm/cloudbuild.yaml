@@ -6,10 +6,24 @@ steps:
     args:
       - -c
       - |
-        export build_token=\"$(gcloud auth application-default print-access-token)\"
+        export build_token="$(gcloud auth application-default print-access-token)"
         env | grep "^build_" > /workspace/build_vars
 
-  # Step 2: Deploy the KVM from dev to dev-int in Apigee
+  # Step 2: Retrieve the existing KVM data from the dev environment
+  - name: 'gcr.io/cloud-builders/curl'
+    id: "Retrieve KVM Bundle"
+    entrypoint: 'bash'
+    args:
+      - -c
+      - |
+        source /workspace/build_vars
+        echo "Retrieving KVM from dev environment..."
+        curl -X GET "https://apigee.googleapis.com/v1/organizations/${_APIGEE_PROJECT}/environments/dev/keyvaluemaps/apigee-internal-devops-01" \
+        -H "Authorization: Bearer ${build_token}" \
+        -H "Accept: application/json" \
+        -o /workspace/kvm_data.json
+
+  # Step 3: Deploy the retrieved KVM data to the dev-int environment
   - name: 'gcr.io/cloud-builders/curl'
     id: "Deploy KVM Bundle"
     entrypoint: 'bash'
@@ -17,21 +31,8 @@ steps:
       - -c
       - |
         source /workspace/build_vars
-        echo "Deploying KVM from dev to dev-int in Apigee..."
-        curl -X POST "https://apigee.googleapis.com/v1/organizations/${_APIGEE_PROJECT}/environments/${_APIGEE_UAT_ENV}/keyvaluemaps" \
+        echo "Deploying KVM to dev-int environment..."
+        curl -X POST "https://apigee.googleapis.com/v1/organizations/${_APIGEE_PROJECT}/environments/dev-int/keyvaluemaps" \
         -H "Authorization: Bearer ${build_token}" \
         -H "Content-Type: application/json" \
-        -d '{
-          "name": "apigee-internal-01",
-          "encrypted": false,
-          "entry": [
-            {
-              "name": "key1",
-              "value": "value1"
-            },
-            {
-              "name": "key2",
-              "value": "value2"
-            }
-          ]
-        }'
+        -d @/workspace/kvm_data.json
