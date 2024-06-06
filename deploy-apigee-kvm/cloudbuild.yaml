@@ -1,27 +1,37 @@
 steps:
-  # Step 1: Export the KVM from the dev environment
-  - name: 'gcr.io/cloud-builders/curl'
-    id: 'Export KVM'
-    entrypoint: 'sh'
+  # Step 1: Get an authentication token and store it in a file
+  - name: 'gcr.io/cloud-builders/gcloud'
+    id: variables
+    entrypoint: 'bash'
     args:
-      - '-c'
+      - -c
       - |
-        curl -X GET "https://apigee.googleapis.com/v1/organizations/qrec-qa-apigee-nonprod/environments/dev/keyvaluemaps/apigee-internal-devops-01" \
-        -H "Authorization: Bearer $(gcloud auth print-access-token)" \
-        -o kvm.json
+        export build_token="$(gcloud auth application-default print-access-token)"
+        env | grep "^build_" > /workspace/build_vars
 
-  # Step 2: Import the KVM into the dev-int environment
+  # Step 2: Create a KVM in the dev environment
   - name: 'gcr.io/cloud-builders/curl'
-    id: 'Import KVM'
-    entrypoint: 'sh'
+    id: "Create KVM"
+    entrypoint: 'bash'
     args:
-      - '-c'
+      - -c
       - |
-        curl -X POST "https://apigee.googleapis.com/v1/organizations/qrec-qa-apigee-nonprod/environments/dev-int/keyvaluemaps" \
-        -H "Authorization: Bearer $(gcloud auth print-access-token)" \
+        source /workspace/build_vars
+        echo "Creating KVM in dev environment..."
+        curl -X POST "https://apigee.googleapis.com/v1/organizations/${_APIGEE_PROJECT}/environments/dev/keyvaluemaps" \
+        -H "Authorization: Bearer ${build_token}" \
         -H "Content-Type: application/json" \
-        -d @kvm.json
-
-substitutions:
-  _PROJECT_ID: 'qrec-qa-apigee-nonprod'
-  _KVM_NAME: 'apigee-internal-devops-01'
+        -d '{
+            "name": "SampleKVM",
+            "encrypted": false,
+            "entry": [
+                {
+                    "name": "COMPANY",
+                    "value": "example.com"
+                },
+                {
+                    "name": "LOCATION",
+                    "value": "San Francisco"
+                }
+            ]
+        }'

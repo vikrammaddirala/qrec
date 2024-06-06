@@ -1,70 +1,36 @@
 steps:
-  # Step 1: Create an API product
-  - name: 'gcr.io/cloud-builders/curl'
-    id: 'Create API Product'
-    entrypoint: 'sh'
+  # Step 1: Set Variables and Fetch Access Token
+  - name: 'gcr.io/cloud-builders/gcloud'
+    id: variables
+    entrypoint: 'bash'
     args:
-      - '-c'
+      - -c
       - |
-        curl -X POST "https://apigee.googleapis.com/v1/organizations/qrec-qa-apigee-nonprod/apiproducts" \
-        -H "Authorization: Bearer $(gcloud auth print-access-token)" \
+        export build_token="$(gcloud auth application-default print-access-token)"
+        echo "build_token=$build_token" > /workspace/build_vars
+
+  # Step 2: Fetch Product Details from Dev Environment
+  - name: 'gcr.io/cloud-builders/curl'
+    id: "Fetch Product Details"
+    entrypoint: 'bash'
+    args:
+      - -c
+      - |
+        source /workspace/build_vars
+        echo "Fetching product details from dev environment..."
+        curl -X GET "https://apigee.googleapis.com/v1/organizations/${_APIGEE_PROJECT}/apiproducts/apigee-internal-devops" \
+        -H "Authorization: Bearer ${build_token}" > /workspace/product_details.json
+
+  # Step 3: Deploy Product to Dev-Int Environment
+  - name: 'gcr.io/cloud-builders/curl'
+    id: "Deploy Product"
+    entrypoint: 'bash'
+    args:
+      - -c
+      - |
+        source /workspace/build_vars
+        echo "Deploying product to dev-int environment..."
+        curl -X PUT "https://apigee.googleapis.com/v1/organizations/${_APIGEE_PROJECT}/apiproducts/apigee-internal-devops" \
+        -H "Authorization: Bearer ${build_token}" \
         -H "Content-Type: application/json" \
-        -d '{
-              "name": "sample-api-product",
-              "displayName": "Sample API Product",
-              "environments": ["dev"],
-              "approvalType": "auto",
-              "proxies": ["sample-proxy"]
-            }' \
-        -o api_product.json
-
-  # Step 2: Create a developer
-  - name: 'gcr.io/cloud-builders/curl'
-    id: 'Create Developer'
-    entrypoint: 'sh'
-    args:
-      - '-c'
-      - |
-        curl -X POST "https://apigee.googleapis.com/v1/organizations/qrec-qa-apigee-nonprod/developers" \
-        -H "Authorization: Bearer $(gcloud auth print-access-token)" \
-        -H "Content-Type: application/json" \
-        -d '{
-              "email": "developer@example.com",
-              "firstName": "John",
-              "lastName": "Doe",
-              "userName": "johndoe"
-            }' \
-        -o developer.json
-
-  # Step 3: Create an app and get the credentials
-  - name: 'gcr.io/cloud-builders/curl'
-    id: 'Create App and Get Credentials'
-    entrypoint: 'sh'
-    args:
-      - '-c'
-      - |
-        curl -X POST "https://apigee.googleapis.com/v1/organizations/qrec-qa-apigee-nonprod/developers/developer@example.com/apps" \
-        -H "Authorization: Bearer $(gcloud auth print-access-token)" \
-        -H "Content-Type: application/json" \
-        -d '{
-              "name": "sample-app",
-              "apiProducts": ["sample-api-product"]
-            }' \
-        -o app.json
-
-  # Step 4: Output the credentials to the Cloud Build logs
-  - name: 'gcr.io/cloud-builders/curl'
-    id: 'Output Credentials'
-    entrypoint: 'sh'
-    args:
-      - '-c'
-      - |
-        echo "App credentials:" 
-        cat app.json | jq '.credentials'
-
-substitutions:
-  _PROJECT_ID: 'qrec-qa-apigee-nonprod'
-  _API_PRODUCT_NAME: 'sample-api-product'
-  _PROXY_NAME: 'sample-proxy'
-  _DEVELOPER_EMAIL: 'developer@example.com'
-  _APP_NAME: 'sample-app'
+        -d @/workspace/product_details.json

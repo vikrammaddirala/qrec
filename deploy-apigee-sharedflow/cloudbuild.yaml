@@ -1,25 +1,21 @@
 steps:
-  # Step 1: Undeploy the shared flow from the dev-int environment if already deployed
-  # - name: 'gcr.io/cloud-builders/curl'
-  #   id: 'Undeploy Shared Flow (if exists)'
-  #   entrypoint: 'sh'
-  #   args:
-  #     - '-c'
-  #     - |
-  #       curl -X DELETE "https://apigee.googleapis.com/v1/organizations/qrec-qa-apigee-nonprod/environments/dev-int/sharedflows/commonSF_devops__v1/revisions/1/deployments" \
-  #       -H "Authorization: Bearer $(gcloud auth print-access-token)" || true
-
-  # Step 2: Deploy the shared flow to the dev-int environment
-  - name: 'gcr.io/cloud-builders/curl'
-    id: 'Deploy Shared Flow'
-    entrypoint: 'sh'
+  - name: 'gcr.io/cloud-builders/gcloud'
+    id: variables
+    entrypoint: 'bash'
     args:
-      - '-c'
+      - -c
       - |
-        curl -X POST "https://apigee.googleapis.com/v1/organizations/qrec-qa-apigee-nonprod/environments/dev-int/sharedflows/commonSF_devops__v1/revisions/1/deployments" \
-        -H "Authorization: Bearer $(gcloud auth print-access-token)"
+        export build_token=\"$(gcloud auth application-default print-access-token)\"
+        env | grep "^build_" > /workspace/build_vars
 
-substitutions:
-  _PROJECT_ID: 'qrec-qa-apigee-nonprod'
-  _SHARED_FLOW_NAME: 'commonSF_devops__v1'
-  _REVISION_NUMBER: '1'
+  - name: 'gcr.io/cloud-builders/curl'
+    id: "Deploy Shared Flow Bundle"
+    entrypoint: 'bash'
+    args:
+      - -c
+      - |
+        source /workspace/build_vars
+        echo "Deploying shared flow from dev to dev-int in Apigee..."
+        curl -X POST "https://apigee.googleapis.com/v1/organizations/${_APIGEE_PROJECT}/environments/${_APIGEE_UAT_ENV}/sharedflows/commonSF_devops__v1/revisions/1/deployments" \
+        -H "Authorization: Bearer ${build_token}"
+
