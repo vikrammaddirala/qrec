@@ -1,36 +1,53 @@
 steps:
-  # Step 1: Set Variables and Fetch Access Token
+  # Step 1: Deploy Product to New Environment
   - name: 'gcr.io/cloud-builders/gcloud'
-    id: variables
+    id: deploy-proxy
     entrypoint: 'bash'
     args:
       - -c
       - |
+        # Authenticate and get access token
         export build_token="$(gcloud auth application-default print-access-token)"
-        echo "build_token=$build_token" > /workspace/build_vars
+        
+        # Define variables for deployment
+        project_id="your-project-id"
+        org_name="apigee-x-379708"
+        source_env="dev"
+        target_env="dev-int"
+        proxy_name="helloworld"
+        product_name="apigee-internal-devops"
 
-  # Step 2: Fetch Product Details from Dev Environment
+        # Deploy the proxy to the new environment
+        gcloud api-gateway gateways deploys create $proxy_name \
+          --api=$proxy_name \
+          --project=$project_id \
+          --organization=$org_name \
+          --environment=$target_env \
+          --source_environment=$source_env \
+          --oauth_token=$build_token
+
+  # Step 2: Create App and Get Credentials
   - name: 'gcr.io/cloud-builders/curl'
-    id: "Fetch Product Details"
+    id: create-app
     entrypoint: 'bash'
     args:
       - -c
       - |
-        source /workspace/build_vars
-        echo "Fetching product details from dev environment..."
-        curl -X GET "https://apigee.googleapis.com/v1/organizations/${_APIGEE_PROJECT}/apiproducts/apigee-internal-devops" \
-        -H "Authorization: Bearer ${build_token}" > /workspace/product_details.json
+        # Define variables for app creation
+        org_name="apigee-x-379708"
+        env_name="dev-int"
+        app_name="test-app-01"
+        credentials_file="/workspace/credentials.json"
 
-  # Step 3: Deploy Product to Dev-Int Environment
-  - name: 'gcr.io/cloud-builders/curl'
-    id: "Deploy Product"
-    entrypoint: 'bash'
-    args:
-      - -c
-      - |
-        source /workspace/build_vars
-        echo "Deploying product to dev-int environment..."
-        curl -X PUT "https://apigee.googleapis.com/v1/organizations/${_APIGEE_PROJECT}/apiproducts/apigee-internal-devops" \
-        -H "Authorization: Bearer ${build_token}" \
-        -H "Content-Type: application/json" \
-        -d @/workspace/product_details.json
+        # Create the app and store credentials in a file
+        curl -X POST \
+          -H "Authorization: Bearer $build_token" \
+          -H "Content-Type: application/json" \
+          -d '{"name": "'$app_name'", "apiProducts": "'$product_name'"}' \
+          "https://apigee.googleapis.com/v1/organizations/$org_name/environments/dev-int/apps" \
+          -o $credentials_file
+
+        # Print or log the credentials
+        cat $credentials_file  # Echo credentials to the build log
+
+# Optional: Add more steps as needed
