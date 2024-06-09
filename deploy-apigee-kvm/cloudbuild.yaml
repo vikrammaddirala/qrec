@@ -1,22 +1,4 @@
 steps:
-  # Step 0: Make create_kvm.sh executable
-  - name: 'gcr.io/cloud-builders/gcloud'
-    entrypoint: 'bash'
-    args:
-      - -c
-      - |
-        chmod +x deploy-apigee-kvm/create_kvm.sh
-
-  # Step 1: Execute create_kvm.sh script
-  - name: 'gcr.io/cloud-builders/gcloud'
-    id: create-kvm-script
-    entrypoint: 'bash'
-    args:
-      - -c
-      - |
-        ./deploy-apigee-kvm/create_kvm.sh
-
-  # Step 2: Get authentication token and store it in a file
   - name: 'gcr.io/cloud-builders/gcloud'
     id: variables
     entrypoint: 'bash'
@@ -25,3 +7,29 @@ steps:
       - |
         export build_token="$(gcloud auth application-default print-access-token)"
         env | grep "^build_" > /workspace/build_vars
+
+  - name: 'gcr.io/cloud-builders/curl'
+    id: export-kvm
+    entrypoint: 'bash'
+    args:
+      - -c
+      - |
+        source /workspace/build_vars
+        curl -H "Authorization: Bearer $build_token" \
+             -H "Content-Type: application/json" \
+             "https://apigee.googleapis.com/v1/organizations/YOUR_ORGANIZATION/environments/dev/keyvaluemaps/YOUR_KVM_NAME" \
+             -o /workspace/kvm.json
+
+  - name: 'gcr.io/cloud-builders/curl'
+    id: import-kvm
+    entrypoint: 'bash'
+    args:
+      - -c
+      - |
+        source /workspace/build_vars
+        curl -X POST -H "Authorization: Bearer $build_token" \
+             -H "Content-Type: application/json" \
+             -d @/workspace/kvm.json \
+             "https://apigee.googleapis.com/v1/organizations/YOUR_ORGANIZATION/environments/dev-int/keyvaluemaps"
+
+timeout: '600s'
