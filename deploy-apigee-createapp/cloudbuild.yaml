@@ -11,15 +11,17 @@ steps:
 
   # Step 2: Install Apigee CLI and deploy the shared flow from dev to uat
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
-    id: deploy-shared-flow
     entrypoint: 'bash'
     args:
       - '-c'
       - |
-        # Install apigeecli
+        # install apigeecli
         echo "Installing apigeecli"
         source deploy-apigee-createapp/installapigeecli.sh
-
+  
+        # Add the apigeecli binary to PATH
+        export PATH=$PATH:$HOME/.apigeecli/bin
+  
         # Source substitution variables
         shared_flow_name="commonSF_devops__v1"
         source_env="dev"
