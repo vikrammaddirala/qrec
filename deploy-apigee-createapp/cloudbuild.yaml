@@ -7,7 +7,7 @@ steps:
       - '-c'
       - |
         # Get the auth token
-        export build_token=\"$(gcloud auth print-access-token)\"
+        export build_token="$(gcloud auth print-access-token)"
         echo "build_token=${build_token}" > /workspace/auth-token.txt
 
   # Step 2: Export the specific shared flow
@@ -21,32 +21,34 @@ steps:
         shared_flow_name="commonSF_devops__v1"
         shared_flow_revision="1"
         output_dir="/workspace/shared_flows"
-
+        
         mkdir -p ${output_dir}
         # Read the token from the previous step
         source /workspace/auth-token.txt
         # Export the specified shared flow
         echo "Exporting shared flow: ${shared_flow_name}"
-        curl -H "Authorization: Bearer ${build_token}" "https://apigee.googleapis.com/v1/organizations/${source_org}/sharedflows/${shared_flow_name}/revisions/${shared_flow_revision}?format=bundle" -o ${output_dir}/${shared_flow_name}.zip
+        
+        curl -H "Authorization: Bearer ${build_token}" https://apigee.googleapis.com/v1/organizations/${source_org}/sharedflows/${shared_flow_name}/revisions/${shared_flow_revision}?format=bundle -o ${output_dir}/${shared_flow_name}.zip
 
-  # Step 3: Push the exported shared flow to new project
+  # Step 3: Install Apigee CLI and push the exported shared flow to the new project
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
     entrypoint: 'bash'
     args:
       - '-c'
       - |
-        # install apigeecli
-        echo "Installing apigeecli"
-        source export-deploy-shared-flow/installapigeecli.sh
+        # Download and install Apigee CLI
+        curl -LO https://raw.githubusercontent.com/<your-repo>/path-to/installapigeecli.sh
+        chmod +x installapigeecli.sh
+        ./installapigeecli.sh
 
         # source substitution variables
         shared_flow_name="commonSF_devops__v1"
         target_env="uat"
         target_org="qrec-qa-apigee-nonprod"
-
+        
         # Read the token from the previous step
         source /workspace/auth-token.txt
-
+        
         # push & deploy the shared flow to destination project
         echo "Importing & deploying shared flow: ${shared_flow_name}"
         apigeecli sharedflows create bundle --name ${shared_flow_name} --env ${target_env} --org ${target_org} --token ${build_token} -p "/workspace/shared_flows/${shared_flow_name}.zip" --wait --ovr
