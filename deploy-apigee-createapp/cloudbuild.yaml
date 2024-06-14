@@ -10,59 +10,34 @@ steps:
         export build_token=\"$(gcloud auth print-access-token)\"
         echo "build_token=${build_token}" > /workspace/auth-token.txt
 
-  # Step 2: Push the shared flow to UAT environment
+  # Step 2: Export the specific shared flow
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
     entrypoint: 'bash'
     args:
       - '-c'
       - |
-        # Install apigeecli
+        # source substitution variables
+        source_org="qrec-qa-apigee-nonprod"
+        shared_flow_name="commonSF_devops__v1"
+        shared_flow_revision="1"
+        output_dir="/workspace/shared_flows"
+
+        mkdir -p ${output_dir}
+        # Read the token from the previous step
+        source /workspace/auth-token.txt
+        # Export the specified shared flow
+        echo "Exporting shared flow: ${shared_flow_name}"
+        curl -H "Authorization: Bearer ${build_token}" "https://apigee.googleapis.com/v1/organizations/${source_org}/sharedflows/${shared_flow_name}/revisions/${shared_flow_revision}?format=bundle" -o ${output_dir}/${shared_flow_name}.zip
+
+  # Step 3: Push the exported shared flow to new project
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - |
+        # install apigeecli
         echo "Installing apigeecli"
-        set -e
-        OS="$(uname)"
-        if [ "${OS}" = "Darwin" ] ; then
-          OSEXT="Darwin"
-        else
-          OSEXT="Linux"
-        fi
-
-        APIGEECLI_VERSION="latest"
-        LOCAL_ARCH=$(uname -m)
-        case "${LOCAL_ARCH}" in
-          x86_64|amd64)
-            APIGEECLI_ARCH=x86_64
-            ;;
-          arm64|armv8*|aarch64*)
-            APIGEECLI_ARCH=arm64
-            ;;
-          *)
-            echo "This system's architecture, ${LOCAL_ARCH}, isn't supported"
-            exit 1
-            ;;
-        esac
-
-        tmp=$(mktemp -d /tmp/apigeecli.XXXXXX)
-        NAME="apigeecli_${APIGEECLI_VERSION}"
-
-        cd "$tmp" || exit
-        URL="https://github.com/apigee/apigeecli/releases/download/${APIGEECLI_VERSION}/apigeecli_${APIGEECLI_VERSION}_${OSEXT}_${APIGEECLI_ARCH}.zip"
-
-        echo "\nDownloading ${NAME} from ${URL} ...\n"
-        if ! curl -o /dev/null -sIf "$URL"; then
-          echo "\n${URL} is not found, please specify a valid APIGEECLI_VERSION and TARGET_ARCH\n"
-          exit 1
-        fi
-        curl -fsLO "$URL"
-        filename="apigeecli_${APIGEECLI_VERSION}_${OSEXT}_${APIGEECLI_ARCH}.zip"
-        apt-get update && apt-get install -y unzip
-        unzip "${filename}"
-        rm "${filename}"
-        
-        cd "${tmp}/apigeecli_${APIGEECLI_VERSION}_${OSEXT}_${APIGEECLI_ARCH}" || exit
-        chmod +x apigeecli
-        mv apigeecli /usr/local/bin/apigeecli
-        
-        echo "apigeecli installation complete"
+        source export-deploy-shared-flow/installapigeecli.sh
 
         # source substitution variables
         shared_flow_name="commonSF_devops__v1"
@@ -72,6 +47,6 @@ steps:
         # Read the token from the previous step
         source /workspace/auth-token.txt
 
-        # Deploy the shared flow to the UAT environment
-        echo "Importing & deploying shared flow: ${shared_flow_name} to ${target_env} environment"
+        # push & deploy the shared flow to destination project
+        echo "Importing & deploying shared flow: ${shared_flow_name}"
         apigeecli sharedflows create bundle --name ${shared_flow_name} --env ${target_env} --org ${target_org} --token ${build_token} -p "/workspace/shared_flows/${shared_flow_name}.zip" --wait --ovr
