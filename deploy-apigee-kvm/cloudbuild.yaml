@@ -1,36 +1,83 @@
 steps:
-  - name: 'gcr.io/cloud-builders/gcloud'
-    id: variables
+  # Step 1: Retrieve Google Auth Token
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    id: 'get-auth-token'
     entrypoint: 'bash'
     args:
-      - -c
+      - '-c'
       - |
-        export build_token="$(gcloud auth application-default print-access-token)"
-        env | grep "^build_" > /workspace/build_vars
-
-  - name: 'gcr.io/cloud-builders/curl'
-    id: create-kvm
+        # Get the auth token
+        export build_token="$(gcloud auth print-access-token)"
+        echo "build_token=${build_token}" > /workspace/auth-token.txt
+        
+  # Step 2: Export the specific KVM from the source environment
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
     entrypoint: 'bash'
     args:
-      - -c
+      - '-c'
       - |
-        source /workspace/build_vars
-        curl -X POST -H "Authorization: Bearer $build_token" \
-             -H "Content-Type: application/json" \
-             -d '{
-                   "name": "apiegee-test-kvm",
-                   "encrypted": false,
-                   "entry": [
-                     {
-                       "name": "name1",
-                       "value": "vikram"
-                     },
-                     {
-                       "name": "name2",
-                       "value": "vicky"
-                     }
-                   ]
-                 }' \
-             "https://apigee.googleapis.com/v1/organizations/qrec-qa-apigee-nonprod/environments/dev/keyvaluemaps"
+        # Define environment variables
+        source_env="dev"
+        target_env="dev-int"
+        kvm_name="apigee-internal-01"
+        org_name="ORGANIZATION_ID"
+        output_dir="/workspace/kvm"
+        
+        mkdir -p ${output_dir}
+        # Read the token from the previous step
+        source /workspace/auth-token.txt
+        # Export the specified KVM
+        echo "Exporting KVM: ${kvm_name} from environment: ${source_env}"
+        
+        curl -H "Authorization: Bearer ${build_token}" https://apigee.googleapis.com/v1/organizations/${org_name}/environments/${source_env}/keyvaluemaps/${kvm_name}/entries -o ${output_dir}/${kvm_name}.json
+        echo "curl -H "Authorization: Bearer ${build_token}" https://apigee.googleapis.com/v1/organizations/${org_name}/environments/${source_env}/keyvaluemaps/${kvm_name}/entries -o ${output_dir}/${kvm_name}.json"
+       
+  # Step 3: Push the exported KVM to Cloud Storage
+  - name: 'gcr.io/cloud-builders/gsutil'
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - |
+        # Define environment variables
+        kvm_name="apigee-internal-01"
+        bucket_name="YOUR_BUCKET_NAME"
+        
+        # Copy the exported KVM to Cloud Storage
+        gsutil cp /workspace/kvm/${kvm_name}.json gs://${bucket_name}/kvm/${kvm_name}.json
+        
+  # Step 4: Deploy the KVM to the target environment
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - |
+        # Define environment variables
+        source_env="dev"
+        target_env="dev-int"
+        kvm_name="apigee-internal-01"
+        org_name="ORGANIZATION_ID"
+        
+        echo "Installing apigeecli"
+        curl -L https://github.com/apigee/apigeecli/releases/latest/download/apigeecli_linux_amd64.tar.gz | tar xz -C /usr/local/bin
+        
+        # Read the token from the previous step
+        source /workspace/auth-token.txt
+        
+        # Push & create KVM to the target environment
+        echo "Importing & creating KVM: ${kvm_name} to environment: ${target_env}"
 
-timeout: '600s'
+        # Delete existing KVM map in the target environment
+        delete_output=$(apigeecli kvms delete -o ${org_name} -e ${target_env} -n ${kvm_name} -t ${build_token} 2>&1) || true
+        echo "$delete_output"
+        if echo "$delete_output" | grep -q '"code": 404'; then
+          echo "KVM map not found (404 error), continuing with build"
+        elif echo "$delete_output" | grep -q '"code":'; then
+          echo "Failed to delete KVM map with error: $delete_output"
+          exit 1
+        fi
+        
+        # Create KVM map
+        apigeecli kvms create -o ${org_name} -e ${target_env} -n ${kvm_name} -t ${build_token}
+
+        # Import KVM entries
+        apigeecli kvms entries import -o ${org_name} -e ${target_env} -f /workspace/kvm/${kvm_name}.json -m ${kvm_name} -t ${build_token}
