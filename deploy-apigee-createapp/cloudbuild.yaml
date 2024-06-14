@@ -10,27 +10,7 @@ steps:
         export build_token="$(gcloud auth print-access-token)"
         echo "build_token=${build_token}" > /workspace/auth-token.txt
 
-  # Step 2: Export the specific shared flow
-  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
-    entrypoint: 'bash'
-    args:
-      - '-c'
-      - |
-        # source substitution variables
-        source_org="qrec-qa-apigee-nonprod"
-        shared_flow_name="commonSF_devops__v1"
-        shared_flow_revision="1"
-        output_dir="/workspace/shared_flows"
-        
-        mkdir -p ${output_dir}
-        # Read the token from the previous step
-        source /workspace/auth-token.txt
-        # Export the specified shared flow
-        echo "Exporting shared flow: ${shared_flow_name}"
-        
-        curl -H "Authorization: Bearer ${build_token}" https://apigee.googleapis.com/v1/organizations/${source_org}/sharedflows/${shared_flow_name}/revisions/${shared_flow_revision}?format=bundle -o ${output_dir}/${shared_flow_name}.zip
-
-  # Step 3: Install Apigee CLI and push the exported shared flow to the new project
+  # Step 2: Install Apigee CLI and deploy the shared flow from dev to uat
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
     entrypoint: 'bash'
     args:
@@ -41,15 +21,15 @@ steps:
         curl -LO "https://github.com/apigee/apigeecli/releases/latest/download/apigeecli_Linux_x86_64.tar.gz"
         tar -xzf apigeecli_Linux_x86_64.tar.gz -C /usr/local/bin apigeecli
 
-        # source substitution variables
+        # Source substitution variables
         shared_flow_name="commonSF_devops__v1"
+        source_env="dev"
         target_env="uat"
         target_org="qrec-qa-apigee-nonprod"
         
         # Read the token from the previous step
         source /workspace/auth-token.txt
         
-        # Push & deploy the shared flow to destination project
-        echo "Importing & deploying shared flow: ${shared_flow_name}"
-        /usr/local/bin/apigeecli sharedflows create bundle --name ${shared_flow_name} --env ${target_env} --org ${target_org} --token ${build_token} -p "/workspace/shared_flows/${shared_flow_name}.zip" --wait --ovr
-
+        # Deploy the shared flow from dev to uat environment
+        echo "Deploying shared flow: ${shared_flow_name} from ${source_env} to ${target_env}"
+        /usr/local/bin/apigeecli sharedflows deploy --name ${shared_flow_name} --fromenv ${source_env} --toenv ${target_env} --org ${target_org} --token ${build_token} --wait --ovr
