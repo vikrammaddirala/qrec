@@ -31,20 +31,7 @@ steps:
         
         curl -H "Authorization: Bearer ${build_token}" https://apigee.googleapis.com/v1/organizations/${org_name}/environments/${source_env}/keyvaluemaps/${kvm_name}/entries -o ${output_dir}/${kvm_name}.json
         echo "curl -H "Authorization: Bearer ${build_token}" https://apigee.googleapis.com/v1/organizations/${org_name}/environments/${source_env}/keyvaluemaps/${kvm_name}/entries -o ${output_dir}/${kvm_name}.json"
-       
-  # # Step 3: Push the exported KVM to Cloud Storage
-  # - name: 'gcr.io/cloud-builders/gsutil'
-  #   entrypoint: 'bash'
-  #   args:
-  #     - '-c'
-  #     - |
-  #       # Define environment variables
-  #       kvm_name="apigee-internal-01"
-  #       bucket_name="YOUR_BUCKET_NAME"
-        
-  #       # Copy the exported KVM to Cloud Storage
-  #       gsutil cp /workspace/kvm/${kvm_name}.json gs://${bucket_name}/kvm/${kvm_name}.json
-        
+           
   # Step 4: Deploy the KVM to the target environment
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
     entrypoint: 'bash'
@@ -58,7 +45,9 @@ steps:
         org_name="qrec-qa-apigee-nonprod"
         
         echo "Installing apigeecli"
-        curl -L https://github.com/apigee/apigeecli/releases/latest/download/apigeecli_linux_amd64.tar.gz | tar xz -C /usr/local/bin
+        curl -L https://github.com/apigee/apigeecli/releases/latest/download/apigeecli_linux_amd64.tar.gz -o apigeecli.tar.gz
+        tar -zxvf apigeecli.tar.gz
+        mv apigeecli /usr/local/bin
         
         # Read the token from the previous step
         source /workspace/auth-token.txt
