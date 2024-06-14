@@ -20,7 +20,7 @@ steps:
         source deploy-apigee-createapp/installapigeecli.sh
 
         # Set the PATH to include the apigeecli binary
-        export PATH=/usr/local/bin:$PATH
+        export path=/usr/local/bin:$path
 
         # Source substitution variables
         shared_flow_name="commonSF_devops__v1"
