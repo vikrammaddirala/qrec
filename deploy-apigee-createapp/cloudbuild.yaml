@@ -1,21 +1,22 @@
 steps:
-  # Step 1: Retrieve Google Auth Token
+  # Step 1: Retrieve Google Auth Token and create auth-token.txt
   - name: 'gcr.io/cloud-builders/gcloud'
     id: variables
     entrypoint: 'bash'
     args:
       - -c
       - |
-        export build_token=\"$(gcloud auth application-default print-access-token)\"
-        env | grep "^build_" > /workspace/build_vars
+        export build_token="$(gcloud auth application-default print-access-token)"
+        echo "build_token=${build_token}" > /workspace/auth-token.txt
 
   # Step 2: Install Apigee CLI and deploy the shared flow from dev to uat
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    id: deploy-shared-flow
     entrypoint: 'bash'
     args:
       - '-c'
       - |
-        # install apigeecli
+        # Install apigeecli
         echo "Installing apigeecli"
         source deploy-apigee-createapp/installapigeecli.sh
 
