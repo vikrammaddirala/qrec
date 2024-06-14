@@ -1,19 +1,4 @@
 #!/bin/sh
-# Copyright 2022 Google LLC
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#      http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-
-
 set -e
 
 # Determines the operating system.
@@ -26,7 +11,7 @@ fi
 
 # Determine the latest apigeecli version by version number ignoring alpha, beta, and rc versions.
 if [ "${APIGEECLI_VERSION}" = "" ] ; then
-  APIGEECLI_VERSION="$(curl -si  https://api.github.com/repos/apigee/apigeecli/releases/latest | grep tag_name | sed -E 's/.*"([^"]+)".*/\1/')"
+  APIGEECLI_VERSION="$(curl -sL https://api.github.com/repos/apigee/apigeecli/releases/latest | grep tag_name | sed -E 's/.*"([^"]+)".*/\1/')"
 fi
 
 LOCAL_ARCH=$(uname -m)
@@ -48,8 +33,8 @@ case "${LOCAL_ARCH}" in
 esac
 
 if [ "${APIGEECLI_VERSION}" = "" ] ; then
-  printf "Unable to get latest apigeecli version. Set APIGEECLI_VERSION env var and re-run. For example: export APIGEECLI_VERSION=v1.104"
-  exit 1;
+  echo "Unable to get latest apigeecli version. Set APIGEECLI_VERSION env var and re-run. For example: export APIGEECLI_VERSION=v1.104"
+  exit 1
 fi
 
 # older versions of apigeecli used a file called .apigeecli. This changed to a folder in v1.108
@@ -61,53 +46,37 @@ fi
 # Downloads the apigeecli binary archive.
 tmp=$(mktemp -d /tmp/apigeecli.XXXXXX)
 NAME="apigeecli_$APIGEECLI_VERSION"
-
-cd "$tmp" || exit
 URL="https://github.com/apigee/apigeecli/releases/download/${APIGEECLI_VERSION}/apigeecli_${APIGEECLI_VERSION}_${OSEXT}_${APIGEECLI_ARCH}.zip"
-SIG_URL="https://github.com/apigee/apigeecli/releases/download/${APIGEECLI_VERSION}/apigeecli_${APIGEECLI_VERSION}_${OSEXT}_${APIGEECLI_ARCH}.zip.sig"
 COSIGN_PUBLIC_KEY="https://raw.githubusercontent.com/apigee/apigeecli/main/cosign.pub"
 
-
-printf "\nDownloading %s from %s ...\n" "$NAME" "$URL"
+echo "\nDownloading ${NAME} from ${URL} ..."
 if ! curl -o /dev/null -sIf "$URL"; then
-  printf "\n%s is not found, please specify a valid APIGEECLI_VERSION and TARGET_ARCH\n" "$URL"
+  echo "\n${URL} is not found, please specify a valid APIGEECLI_VERSION and TARGET_ARCH"
   exit 1
 fi
+
 curl -fsLO "$URL"
 filename="apigeecli_${APIGEECLI_VERSION}_${OSEXT}_${APIGEECLI_ARCH}.zip"
+
 # Check if cosign is installed
-set +e # disable exit on error
-cosign version 2>&1 >/dev/null
-RESULT=$?
-set -e # re-enable exit on error
-if [ $RESULT -eq 0 ]; then
-  echo "Verifying the signature of the binary " "$filename"
-  echo "Downloading the cosign public key"
+if cosign version > /dev/null 2>&1; then
+  echo "Verifying the signature of the binary ${filename}"
   curl -fsLO -H 'Cache-Control: no-cache, no-store' "$COSIGN_PUBLIC_KEY"
-  echo "Downloading the signature file " "$SIG_URL"
-  curl -fsLO -H 'Cache-Control: no-cache, no-store' "$SIG_URL"
-  sig_filename="apigeecli_${APIGEECLI_VERSION}_${OSEXT}_${APIGEECLI_ARCH}.zip.sig"
-  echo "Verifying the signature"
-  cosign verify-blob --key "$tmp/cosign.pub" --signature "$tmp/$sig_filename" "$tmp/$filename"
+  sig_filename="${filename}.sig"
+  curl -fsLO -H 'Cache-Control: no-cache, no-store' "https://github.com/apigee/apigeecli/releases/download/${APIGEECLI_VERSION}/${sig_filename}"
+  cosign verify-blob --key "$tmp/cosign.pub" --signature "$tmp/${sig_filename}" "$tmp/$filename"
   rm "$tmp/$sig_filename"
   rm $tmp/cosign.pub
 else
   echo "cosign is not installed, skipping signature verification"
 fi
-echo "${filename}"
-ls
-apt install unzip
+
+echo "Unzipping ${filename}"
+apt-get update && apt-get install -y unzip
 unzip "${filename}"
 rm "${filename}"
-ls
 
-
-
-printf ""
-printf "\napigeecli %s Download Complete!\n" "$APIGEECLI_VERSION"
-printf "\n"
-printf "apigeecli has been successfully downloaded into the %s folder on your system.\n" "$tmp"
-printf "\n"
+echo "\napigeecli ${APIGEECLI_VERSION} Download Complete!\n"
 
 # setup apigeecli
 cd "$HOME" || exit
@@ -115,15 +84,12 @@ mkdir -p "$HOME/.apigeecli/bin"
 mv "${tmp}/apigeecli_${APIGEECLI_VERSION}_${OSEXT}_${APIGEECLI_ARCH}/apigeecli" "$HOME/.apigeecli/bin"
 mv "${tmp}/apigeecli_${APIGEECLI_VERSION}_${OSEXT}_${APIGEECLI_ARCH}/LICENSE.txt" "$HOME/.apigeecli/LICENSE.txt"
 
-printf "Copied apigeecli into the $HOME/.apigeecli/bin folder.\n"
+echo "Copied apigeecli into the $HOME/.apigeecli/bin folder."
 chmod +x "$HOME/.apigeecli/bin/apigeecli"
 rm -r "${tmp}"
 
-# Print message
-printf "\n"
-printf "Added the apigeecli to your path with:"
-printf "\n"
-printf "  export PATH=\$PATH:\$HOME/.apigeecli/bin \n"
-printf "\n"
+echo "Added the apigeecli to your path with:"
+echo "  export PATH=\$PATH:\$HOME/.apigeecli/bin"
+echo ""
 
 export PATH=$PATH:$HOME/.apigeecli/bin
