@@ -1,53 +1,57 @@
 steps:
-  # Step 1: Deploy Product to New Environment
-  - name: 'gcr.io/cloud-builders/gcloud'
-    id: deploy-proxy
+  # Step 1: Retrieve Google Auth Token
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    id: 'get-auth-token'
     entrypoint: 'bash'
     args:
-      - -c
+      - '-c'
       - |
-        # Authenticate and get access token
-        export build_token="$(gcloud auth application-default print-access-token)"
+        # Get the auth token
+        export build_token="$(gcloud auth print-access-token)"
+        echo "build_token=${build_token}" > /workspace/auth-token.txt
+
+  # Step 2: Export the specific shared flow from dev environment
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - |
+        # Source substitution variables
+        source_org="qrec-qa-apigee-nonprod"
+        shared_flow_name="commonSF_devops__v1"
+        shared_flow_revision="1"
+        output_dir="/workspace/shared_flows"
         
-        # Define variables for deployment
-        project_id="your-project-id"
-        org_name="apigee-x-379708"
-        source_env="dev"
-        target_env="dev-int"
-        proxy_name="helloworld"
-        product_name="apigee-internal-devops"
-
-        # Deploy the proxy to the new environment
-        gcloud api-gateway gateways deploys create $proxy_name \
-          --api=$proxy_name \
-          --project=$project_id \
-          --organization=$org_name \
-          --environment=$target_env \
-          --source_environment=$source_env \
-          --oauth_token=$build_token
-
-  # Step 2: Create App and Get Credentials
-  - name: 'gcr.io/cloud-builders/curl'
-    id: create-app
+        mkdir -p ${output_dir}
+        # Read the token from the previous step
+        source /workspace/auth-token.txt
+        # Export the specified shared flow
+        echo "Exporting shared flow: ${shared_flow_name} from dev environment"
+        
+        curl -H "Authorization: Bearer ${build_token}" "https://apigee.googleapis.com/v1/organizations/${source_org}/sharedflows/${shared_flow_name}/revisions/${shared_flow_revision}?format=bundle" -o ${output_dir}/${shared_flow_name}.zip
+        echo "curl -H \"Authorization: Bearer ${build_token}\" https://apigee.googleapis.com/v1/organizations/${source_org}/sharedflows/${shared_flow_name}/revisions/${shared_flow_revision}?format=bundle -o ${output_dir}/${shared_flow_name}.zip"
+       
+  # Step 3: Deploy the shared flow to uat environment in the same organization
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
     entrypoint: 'bash'
     args:
-      - -c
+      - '-c'
       - |
-        # Define variables for app creation
-        org_name="apigee-x-379708"
-        env_name="dev-int"
-        app_name="test-app-01"
-        credentials_file="/workspace/credentials.json"
-
-        # Create the app and store credentials in a file
-        curl -X POST \
-          -H "Authorization: Bearer $build_token" \
-          -H "Content-Type: application/json" \
-          -d '{"name": "'$app_name'", "apiProducts": "'$product_name'"}' \
-          "https://apigee.googleapis.com/v1/organizations/$org_name/environments/dev-int/apps" \
-          -o $credentials_file
-
-        # Print or log the credentials
-        cat $credentials_file  # Echo credentials to the build log
-
-# Optional: Add more steps as needed
+        # Install apigeecli
+        echo "Installing apigeecli"
+        curl -L https://github.com/apigee/apigeecli/releases/latest/download/apigeecli_linux_amd64.tar.gz -o apigeecli.tar.gz
+        tar -zxvf apigeecli.tar.gz
+        mv apigeecli /usr/local/bin
+        
+        # Source substitution variables
+        shared_flow_name="commonSF_devops__v1"
+        target_env="uat"
+        target_org="qrec-qa-apigee-nonprod"
+        
+        # Read the token from the previous step
+        source /workspace/auth-token.txt
+        
+        # Push & deploy the shared flow to the uat environment
+        echo "Importing & deploying shared flow: ${shared_flow_name} to uat environment"
+        echo "apigeecli sharedflows create bundle --name ${shared_flow_name} --env ${target_env} --org ${target_org} --token ${build_token} -p /workspace/shared_flows/${shared_flow_name}.zip --wait --ovr"
+        apigeecli sharedflows create bundle --name ${shared_flow_name} --env ${target_env} --org ${target_org} --token ${build_token} -p "/workspace/shared_flows/${shared_flow_name}.zip" --wait --ovr
