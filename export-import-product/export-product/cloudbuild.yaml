@@ -28,34 +28,35 @@ steps:
         # Export the specified product
         echo "Exporting product: ${source_product_name}"
         curl -H "Authorization: Bearer ${build_token}" https://apigee.googleapis.com/v1/organizations/${source_org}/apiproducts/${source_product_name} -o ${output_dir}/${source_product_name}.json
-
+       
   # Step 3: Push the exported product to GitHub Repo
   - name: 'gcr.io/cloud-builders/git'
     entrypoint: 'bash'
     args:
       - '-c'
       - |
-        # source substitution variables
+        # Source substitution variables
         git_username="vikrammaddirala"
         git_userpassword="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"
         git_usermail="vikram.maddirala5@gmail.com"
         git_reponame="qrec"
         source_product_name="apigee-internal-devops"
         target_product_name="apigee-internal-devops"
-
-        # Clone the GitHub repository
+        
+        ssh-keyscan -t rsa github.com > known_hosts.github
+        cp known_hosts.github known_hosts
+        echo "cloning the repo.."
         git clone https://${git_username}:${git_userpassword}@github.com/${git_username}/${git_reponame}.git
+        echo "list repo directory"
         cd ${git_reponame}/
-        
-        # Copy the exported product to the repository
-        mkdir -p export-import-product/import-product/
-        cp /workspace/product/${source_product_name}.json export-import-product/import-product/${target_product_name}.json
-        
-        # Set git configuration
+        git status
         git config --global user.email "${git_usermail}"
         git config --global user.name "${git_username}"
-        
-        # Commit and push the file to the repository
+        echo "list repo files"
+        ls
+        echo "copy ${target_product_name}.json"
+        cp /workspace/product/${source_product_name}.json export-import-product/import-product/${target_product_name}.json
         git add .
-        git commit -m "Adding product ${target_product_name}.json"
+        git commit -m "adding product ${target_product_name}.json"
+        echo "Commit & Push the file into repo.."
         git push https://${git_username}:${git_userpassword}@github.com/${git_username}/${git_reponame}.git
