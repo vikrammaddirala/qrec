@@ -37,7 +37,7 @@ steps:
       - |
         # source substitution variables
         git_username="vikrammaddirala"
-        git_userpassword="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"
+        git_userpassword="July@20242024"
         git_usermail="vikram.maddirala5@gmail.com"
         git_reponame="qrec"
         source_product_name="apigee-internal-devops"
