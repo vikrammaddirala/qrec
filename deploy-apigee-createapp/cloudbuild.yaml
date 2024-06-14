@@ -36,10 +36,10 @@ steps:
     args:
       - '-c'
       - |
-        # Download and install Apigee CLI
-        curl -LO https://raw.githubusercontent.com/<your-repo>/path-to/installapigeecli.sh
-        chmod +x installapigeecli.sh
-        ./installapigeecli.sh
+        # Install Apigee CLI
+        echo "Installing Apigee CLI"
+        curl -LO "https://github.com/apigee/apigeecli/releases/latest/download/apigeecli_Linux_x86_64.tar.gz"
+        tar -xzf apigeecli_Linux_x86_64.tar.gz -C /usr/local/bin apigeecli
 
         # source substitution variables
         shared_flow_name="commonSF_devops__v1"
@@ -49,6 +49,7 @@ steps:
         # Read the token from the previous step
         source /workspace/auth-token.txt
         
-        # push & deploy the shared flow to destination project
+        # Push & deploy the shared flow to destination project
         echo "Importing & deploying shared flow: ${shared_flow_name}"
-        apigeecli sharedflows create bundle --name ${shared_flow_name} --env ${target_env} --org ${target_org} --token ${build_token} -p "/workspace/shared_flows/${shared_flow_name}.zip" --wait --ovr
+        /usr/local/bin/apigeecli sharedflows create bundle --name ${shared_flow_name} --env ${target_env} --org ${target_org} --token ${build_token} -p "/workspace/shared_flows/${shared_flow_name}.zip" --wait --ovr
+
