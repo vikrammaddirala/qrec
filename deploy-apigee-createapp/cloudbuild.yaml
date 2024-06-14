@@ -16,10 +16,9 @@ steps:
     args:
       - '-c'
       - |
-        # Install Apigee CLI
-        echo "Installing Apigee CLI"
-        curl -LO "https://github.com/apigee/apigeecli/releases/latest/download/apigeecli_Linux_x86_64.tar.gz"
-        tar -xzf apigeecli_Linux_x86_64.tar.gz -C /usr/local/bin apigeecli
+        # install apigeecli
+        echo "Installing apigeecli"
+        source deploy-apigee-createapp/installapigeecli.sh
 
         # Source substitution variables
         shared_flow_name="commonSF_devops__v1"
