@@ -1,0 +1,48 @@
+steps:
+  # Step 1: Retrieve Google Auth Token
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    id: 'get-auth-token'
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - |
+        # Get the auth token
+        export build_token=\"$(gcloud auth print-access-token)\"
+        echo "build_token=${build_token}" > /workspace/auth-token.txt
+        
+        output_dir="/workspace/product"
+        mkdir -p ${output_dir}
+        
+        # Source substitution variables
+        product_name=${_PRODUCT_NAME}
+        
+        cp export-import-product/import-product/${product_name}.json ${output_dir}/${product_name}.json
+        
+  # Step 2: Push the exported product to new project
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - |
+        
+        # Source substitution variables
+        target_org=${_TARGET_ORG}
+        product_name=${_PRODUCT_NAME}
+        
+        # Read the token from the previous step
+        source /workspace/auth-token.txt
+        
+        # push & create product to destination project
+        echo "Import & update product: ${product_name}"
+
+        #update a product
+        update_output=$((curl -X PUT -H "Content-Type:application/json" -H "Authorization: Bearer ${build_token}" https://apigee.googleapis.com/v1/organizations/${target_org}/apiproducts/${product_name} -d @"/workspace/product/${product_name}.json") 2>&1) || true
+        echo "Product update output is.. $update_output"
+        if echo "$update_output" | grep -q '"code": 404'; then
+          echo "product not found (404 error), continuing to create a new product ${product_name}"
+          #Import product
+          curl -X POST -H "Content-Type:application/json" -H "Authorization: Bearer ${build_token}" https://apigee.googleapis.com/v1/organizations/${target_org}/apiproducts -d @"/workspace/product/${product_name}.json"
+        elif echo "$update_output" | grep -q '"code":'; then
+          echo "Failed to update product with error: $update_output"
+          exit 1
+        fi

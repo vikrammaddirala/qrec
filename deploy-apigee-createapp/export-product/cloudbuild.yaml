@@ -1,0 +1,64 @@
+steps:
+  # Step 1: Retrieve Google Auth Token
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    id: 'get-auth-token'
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - |
+        # Get the auth token
+        export build_token=\"$(gcloud auth print-access-token)\"
+        echo "build_token=${build_token}" > /workspace/auth-token.txt
+  # Step 2: Export the specific product
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - |
+        # Source substitution variables
+        source_org=${_SOURCE_ORG}
+        
+        source_product_name=${_SOURCE_PRODUCT_NAME}
+        output_dir="/workspace/product"
+        mkdir -p ${output_dir}
+        
+        # Read the token from the previous step
+        source /workspace/auth-token.txt
+        
+        # Export the specified product
+        echo "Exporting product: ${source_product_name}"
+        curl -H "Authorization: Bearer ${build_token}" https://apigee.googleapis.com/v1/organizations/${source_org}/apiproducts/${source_product_name} -o ${output_dir}/${source_product_name}.json
+       
+  # Step 3: Push the exported product to GitHub Repo
+  - name: 'gcr.io/cloud-builders/git'
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - |
+        # source substitution variables
+        git_username=${_GIT_USERNAME}
+        git_userpassword="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"
+        git_usermail=${_GIT_USERMAIL}
+        git_reponame=${_GIT_REPONAME}
+        source_product_name=${_SOURCE_PRODUCT_NAME}
+        target_product_name=${_TARGET_PRODUCT_NAME}
+        bucket_name=${_BUCKET_NAME}
+        
+        ssh-keyscan -t rsa github.com > known_hosts.github
+        cp known_hosts.github known_hosts
+        echo "cloning the repo.."
+        git clone https://${git_username}:${git_userpassword}@github.com/${git_username}/${git_reponame}.git
+        echo "list repo directory"
+        cd ${git_reponame}/
+        git status
+        git config --global user.email "${git_usermail}"
+        git config --global user.name "${git_username}"
+        echo "list repo files"
+        ls
+        echo "copy ${target_product_name}.json"
+        cp /workspace/product/${source_product_name}.json export-import-product/import-product/${target_product_name}.json
+        git add .
+        git commit -m "adding product ${target_product_name}.json"
+        echo "Commit & Push the file into repo.."
+        git push https://${git_username}:${git_userpassword}@github.com/${git_username}/${git_reponame}.git
+        
