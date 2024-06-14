@@ -7,8 +7,8 @@ steps:
       - -c
       - |
         # Get the auth token
-        export build_token=\"$(gcloud auth print-access-token)\"
-        echo "build_token=${build_token}" > /workspace/auth-token.txt
+        export BUILD_TOKEN=\"$(gcloud auth print-access-token)\"
+        echo "BUILD_TOKEN=${BUILD_TOKEN}" > /workspace/auth-token.txt
 
   # Step 2: Install Apigee CLI and deploy the shared flow from dev to uat
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
@@ -17,22 +17,23 @@ steps:
     args:
       - '-c'
       - |
-        # install apigeecli
+        # Install apigeecli
         echo "Installing apigeecli"
         source deploy-apigee-createapp/installapigeecli.sh
 
-        # Set the PATH to include the apigeecli binary
-        export path=/usr/local/bin:$path
+        # Set the path to include the apigeecli binary
+        export APIGEE_PATH=/usr/local/bin:$APIGEE_PATH
+        export PATH=$APIGEE_PATH:$PATH
 
         # Source substitution variables
-        shared_flow_name="commonSF_devops__v1"
-        source_env="dev"
-        target_env="uat"
-        target_org="qrec-qa-apigee-nonprod"
+        SHARED_FLOW_NAME="commonSF_devops__v1"
+        SOURCE_ENV="dev"
+        TARGET_ENV="uat"
+        TARGET_ORG="qrec-qa-apigee-nonprod"
         
         # Read the token from the previous step
         source /workspace/auth-token.txt
         
         # Deploy the shared flow from dev to uat environment
-        echo "Deploying shared flow: ${shared_flow_name} from ${source_env} to ${target_env}"
-        /usr/local/bin/apigeecli sharedflows deploy --name ${shared_flow_name} --fromenv ${source_env} --toenv ${target_env} --org ${target_org} --token ${build_token} --wait --ovr
+        echo "Deploying shared flow: ${SHARED_FLOW_NAME} from ${SOURCE_ENV} to ${TARGET_ENV}"
+        /usr/local/bin/apigeecli sharedflows deploy --name ${SHARED_FLOW_NAME} --fromenv ${SOURCE_ENV} --toenv ${TARGET_ENV} --org ${TARGET_ORG} --token ${BUILD_TOKEN} --wait --ovr
