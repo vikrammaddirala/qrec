@@ -25,7 +25,7 @@ steps:
         else
           echo "Deployment successful."
 
-          # Extract and display deployment details
+          # Extract and display deployment details without jq
           echo "Deployment Details:"
-          echo "$response" | jq -r '.'
+          echo "$response" | grep -E 'environment|apiProxy|revision|deployStartTime|proxyDeploymentType'
         fi
