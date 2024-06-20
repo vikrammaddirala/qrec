@@ -32,11 +32,4 @@ steps:
           # Add the proxy to the product
           product_response=$(curl -s -X POST "https://apigee.googleapis.com/v1/organizations/${_APIGEE_PROJECT}/environments/${_APIGEE_UAT_ENV}/apiproducts/apigee-internal-devops/proxies" \
           -H "Authorization: Bearer ${build_token}")
-
-          if echo "$product_response" | grep -q "200 OK"; then
-            echo "Proxy added to product successfully."
-          else
-            echo "Failed to add proxy to product."
-            # Perform additional actions or exit with an error code
-          fi
         fi
