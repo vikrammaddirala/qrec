@@ -1,22 +1,20 @@
 steps:
+  - name: 'gcr.io/cloud-builders/gcloud'
+    id: variables
+    entrypoint: 'bash'
+    args:
+      - -c
+      - |
+        export build_token="$(gcloud auth application-default print-access-token)"
+        env | grep "^build_" > /workspace/build_vars
 
-name: 'gcr.io/cloud-builders/gcloud'
-id: variables
-entrypoint: 'bash'
-args:
-
--c
-|
-export build_token="$(gcloud auth application-default print-access-token)"
-env | grep "^build_" > /workspace/build_vars
-name: 'gcr.io/cloud-builders/curl'
-id: "Deploy Proxy Bundle"
-entrypoint: 'bash'
-args:
-
--c
-|
-source /workspace/build_vars
-echo "Deploying proxy from dev to dev-int in Apigee..."
-curl -X POST "https://apigee.googleapis.com/v1/organizations/${_APIGEE_PROJECT}/environments/${_APIGEE_UAT_ENV}/apis/helloworld-test/revisions/1/deployments"
--H "Authorization: Bearer ${build_token}"
+  - name: 'gcr.io/cloud-builders/curl'
+    id: "Deploy Proxy Bundle"
+    entrypoint: 'bash'
+    args:
+      - -c
+      - |
+        source /workspace/build_vars
+        echo "Deploying proxy from dev to dev-int in Apigee..."
+        curl -X POST "https://apigee.googleapis.com/v1/organizations/${_APIGEE_PROJECT}/environments/${_APIGEE_UAT_ENV}/apis/helloworld-test/revisions/1/deployments" \
+        -H "Authorization: Bearer ${build_token}"
