@@ -1,26 +1,22 @@
-- name: 'gcr.io/cloud-builders/gcloud'
-  id: variables
-  entrypoint: 'bash'
-  args:
-    - -c
-    - |
-      export build_token=\"$(gcloud auth application-default print-access-token)\"
-      env | grep "^build_" > /workspace/build_vars
+steps:
 
-- name: 'gcr.io/cloud-builders/curl'
-  id: "Deploy Proxy Bundle"
-  entrypoint: 'bash'
-  args:
-    - -c
-    - |
-      source /workspace/build_vars
-      echo "Deploying proxy from dev to dev-int in Apigee..."
-      response_code=$(curl -s -o /dev/null -w "%{http_code}" -X POST "https://apigee.googleapis.com/v1/organizations/${_APIGEE_PROJECT}/environments/${_APIGEE_UAT_ENV}/apis/helloworld-test/revisions/1/deployments" \
-      -H "Authorization: Bearer ${build_token}")
+name: 'gcr.io/cloud-builders/gcloud'
+id: variables
+entrypoint: 'bash'
+args:
 
-      if [ "$response_code" -eq 404 ]; then
-        echo "Deployment failed: 404 Not Found"
-        exit 1
-      else
-        echo "Deployment successful"
-      fi
+-c
+|
+export build_token="$(gcloud auth application-default print-access-token)"
+env | grep "^build_" > /workspace/build_vars
+name: 'gcr.io/cloud-builders/curl'
+id: "Deploy Proxy Bundle"
+entrypoint: 'bash'
+args:
+
+-c
+|
+source /workspace/build_vars
+echo "Deploying proxy from dev to dev-int in Apigee..."
+curl -X POST "https://apigee.googleapis.com/v1/organizations/${_APIGEE_PROJECT}/environments/${_APIGEE_UAT_ENV}/apis/helloworld-test/revisions/1/deployments"
+-H "Authorization: Bearer ${build_token}"
