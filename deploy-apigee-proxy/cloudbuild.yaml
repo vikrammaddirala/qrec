@@ -33,11 +33,13 @@ steps:
           product_response=$(curl -s -X PATCH "https://apigee.googleapis.com/v1/organizations/${_APIGEE_PROJECT}/apiproducts/apigee-internal-devops" \
           -H "Authorization: Bearer ${build_token}" \
           -H "Content-Type: application/json" \
-          -d '{
-                "operation": "add",
-                "path": "/proxies",
-                "value": "helloworld-test"
-              }')
+          -d '[
+                {
+                  "op": "add",
+                  "path": "/proxies",
+                  "value": "helloworld-test"
+                }
+              ]')
 
           echo "Product Update Response:"
           echo "$product_response"
