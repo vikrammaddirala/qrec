@@ -24,5 +24,8 @@ steps:
           # Perform additional actions or exit with an error code
         else
           echo "Deployment successful."
-          # Continue with next steps
+
+          # Extract and display deployment details
+          echo "Deployment Details:"
+          echo "$response" | jq -r '.'
         fi
