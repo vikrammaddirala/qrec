@@ -24,6 +24,7 @@ steps:
           exit 1
         else
           echo "Deployment successful."
+        fi
 
   - name: 'gcr.io/cloud-builders/curl'
     id: "Test Proxy"
