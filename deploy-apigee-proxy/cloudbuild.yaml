@@ -24,28 +24,3 @@ steps:
           # Perform additional actions or exit with an error code
         else
           echo "Deployment successful."
-
-          # Extract and display deployment details without jq
-          echo "Deployment Details:"
-          echo "$response" | grep -E 'environment|apiProxy|revision|deployStartTime|proxyDeploymentType'
-
-          # Add the proxy to the product
-          product_response=$(curl -s -X PATCH "https://apigee.googleapis.com/v1/organizations/${_APIGEE_PROJECT}/apiproducts/apigee-internal-devops" \
-          -H "Authorization: Bearer ${build_token}" \
-          -H "Content-Type: application/json" \
-          -d '[
-                {
-                  "op": "add",
-                  "path": "/proxies",
-                  "value": "helloworld-test"
-                }
-              ]')
-
-          if echo "$product_response" | grep -q "200 OK"; then
-            echo "Proxy added to product successfully."
-          else
-            echo "Failed to add proxy to product."
-            echo "$product_response"
-            # Perform additional actions or exit with an error code
-          fi
-        fi
