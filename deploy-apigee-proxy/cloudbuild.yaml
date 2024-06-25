@@ -21,6 +21,27 @@ steps:
 
         if echo "$response" | grep -q "404 Not Found"; then
           echo "404 Not Found: Deployment failed."
-          # Perform additional actions or exit with an error code
+          exit 1
         else
           echo "Deployment successful."
+
+  - name: 'gcr.io/cloud-builders/curl'
+    id: "Test Proxy"
+    entrypoint: 'bash'
+    args:
+      - -c
+      - |
+        source /workspace/build_vars
+        echo "Testing the deployed proxy..."
+        proxy_response=$(curl -s -X GET "https://YOUR_PROXY_ENDPOINT_URL" \
+        -H "Authorization: Bearer ${build_token}")
+
+        echo "Response from the deployed proxy:"
+        echo "$proxy_response"
+
+        if echo "$proxy_response" | grep -q "expected_response"; then
+          echo "Proxy is working as expected."
+        else
+          echo "Proxy response is not as expected."
+          exit 1
+        fi
