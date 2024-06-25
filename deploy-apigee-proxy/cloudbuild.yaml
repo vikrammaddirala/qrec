@@ -34,19 +34,21 @@ steps:
       - |
         source /workspace/build_vars
         echo "Testing the deployed proxy..."
-        proxy_response=$(curl -s --location 'https://34.18.29.48/mockAPI01/test' \
+        proxy_response=$(curl -s -o /workspace/proxy_response.txt -w "%{http_code}" --location 'https://34.18.29.48/mockAPI01/test' \
         --header 'Host: dev-api.qrec.gov.qa' \
         --header 'apiKey: YdxDVXsMaLuOox0gr3e1ANX7blLaCcGenKWUGux564xbu7OF' \
         --header 'Content-Type: application/json' \
-        --header 'apiToken: hjmeydbw9CccHvQv4mGrlm2zrbBK' \
+        --header 'apiToken: 56CuPShYgyfWANBttH8pbNKAoj9F' \
         --header 'language:' \
         --header 'channel:')
 
-        echo "Response from the deployed proxy:"
+        echo "Response HTTP status code:"
         echo "$proxy_response"
+        echo "Response from the deployed proxy:"
+        cat /workspace/proxy_response.txt
 
         # If needed, check for expected response content
-        # if echo "$proxy_response" | grep -q "expected_response"; then
+        # if cat /workspace/proxy_response.txt | grep -q "expected_response"; then
         #   echo "Proxy is working as expected."
         # else
         #   echo "Proxy response is not as expected."
