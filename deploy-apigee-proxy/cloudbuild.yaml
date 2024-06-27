@@ -40,8 +40,15 @@ steps:
         --header 'Content-Type: application/json' \
         --header 'apiToken: haDabwMOsVRgUeUc8YuMSb3DvjQQ')
 
-        echo "Response from the deployed proxy:"
-        echo "$proxy_response"
+        response_code=$(echo "$proxy_response" | grep HTTP | awk '{print $2}')
+        echo "Response code: $response_code"
+
+        if [ "$response_code" != "404" ]; then
+          echo "Proxy is working as expected."
+        else
+          echo "Proxy response is 404 Not Found."
+          exit 1
+        fi
 
         # If needed, check for expected response content
         # if echo "$proxy_response" | grep -q "expected_response"; then
